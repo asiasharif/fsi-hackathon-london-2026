@@ -15,6 +15,34 @@ uv run langgraph dev              # opens LangSmith Studio; input {"complaint_id
 uv run python -m evals.run_evals  # scores the agent in LangSmith
 ```
 
+## How we use git
+
+`main` is the shared copy and must always run. Nobody works on `main` directly: each person works on their own branch and merges in through a pull request.
+
+**Start of the day:**
+```bash
+git checkout main
+git pull origin main                    # get everyone's latest work
+git checkout -b <your-role>             # data-evals, graph-routing, specialists or memory-demo
+```
+
+**While you work (commit and push often):**
+```bash
+git add the_friendly_fraudsters
+git commit -m "Short description of what you did"
+git push origin <your-role>
+git pull origin main                    # now and then, to pick up teammates' merged work
+```
+
+**To get your work into `main`:** on GitHub, open a pull request from your branch into `main`. A teammate checks it and clicks **Merge**. Merge small pieces often (before lunch, mid-afternoon), not everything at the end.
+
+**Watch out:**
+- **Check where your pull request points.** This repo is a fork, so GitHub defaults to LangChain's original repo. At the top of the pull request page, set the base repository to `asiasharif/fsi-hackathon-london-2026` and the base branch to `main`.
+- **`utils/nodes.py` is shared.** Edit only your own functions in it.
+- **`utils/state.py` is shared too.** Change it only after agreeing with the graph and routing person.
+- **Never commit `.env`.** It holds your keys, and git already ignores it.
+- **Pushing asks for a password?** Use a GitHub personal access token, not your account password.
+
 ## Overview
 
 We are building an AI agent that handles card disputes for a bank. A customer says "I didn't make this payment", and the agent works out what kind of problem it is, checks the evidence, recommends what to do and writes the case up. A member of staff then approves the decision. A working starter is in this folder (`the_friendly_fraudsters/`), and the 4 of us each take one part and improve it during the day.
