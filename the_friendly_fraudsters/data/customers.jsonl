@@ -1,0 +1,3 @@
+{"customer_id": "CUST-101", "name": "Priya Shah", "home_country": "GB", "customer_since": 2020, "vulnerable": false}
+{"customer_id": "CUST-102", "name": "Tom Hughes", "home_country": "GB", "customer_since": 2023, "vulnerable": false}
+{"customer_id": "CUST-103", "name": "Amara Okafor", "home_country": "GB", "customer_since": 2018, "vulnerable": true}
