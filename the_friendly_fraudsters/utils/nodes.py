@@ -1,7 +1,9 @@
 """Nodes for the card dispute graph.
 
 Flow: load_case -> classify_dispute -> triage -> [fraud | merchant | friendly_fraud] specialist
-      -> draft_evidence_pack <-> quality_review (max 2 rewrites) -> human_approval -> finalise
+      -> draft_evidence_pack <-> quality_review (max 2 rewrites) -> human_approval -> write_customer_letter -> finalise
+
+write_customer_letter lives in utils/customer_letter.py.
 """
 
 from typing import Literal
