@@ -2,6 +2,13 @@
 
 Team plan, 24 Nov 2026
 
+## Submission materials
+
+- **Slides:** [HACK_NATWEST_THEFRIENDLYFRAUDSTERS.pdf](HACK_NATWEST_THEFRIENDLYFRAUDSTERS.pdf) ([.pptx](HACK_NATWEST_THEFRIENDLYFRAUDSTERS.pptx))
+- **Evidence across the agent development lifecycle** (traces, datasets, experiments, evaluations, and how the agent improved): [AGENT_LIFECYCLE_EVIDENCE.pdf](AGENT_LIFECYCLE_EVIDENCE.pdf)
+- **Notebook with a full run and results:** [dispute_agent.ipynb](dispute_agent.ipynb)
+- **Demo script and Q&A:** [SLIDE_NOTES.md](SLIDE_NOTES.md)
+
 ## Getting started
 
 ```bash
