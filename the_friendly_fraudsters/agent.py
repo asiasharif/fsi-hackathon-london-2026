@@ -2,7 +2,8 @@ from langgraph.graph import END, START, StateGraph
 
 from utils.nodes import (
     classify_dispute, draft_evidence_pack, finalise, fraud_specialist, friendly_fraud_specialist,
-    human_approval, load_case, merchant_specialist, quality_review, route_after_review, route_to_specialist, triage,
+    human_approval, load_case, merchant_specialist, quality_review, route_after_review, route_after_vulnerability,
+    route_to_specialist, triage, vulnerability_check,
 )
 from utils.customer_letter import write_customer_letter
 from utils.state import MyAgentContext, MyAgentInput, MyAgentState
@@ -12,6 +13,7 @@ def build_agent(**kwargs):
     builder = StateGraph(state_schema=MyAgentState, context_schema=MyAgentContext, input_schema=MyAgentInput)
 
     builder.add_node("load_case", load_case)
+    builder.add_node("vulnerability_check", vulnerability_check)
     builder.add_node("classify_dispute", classify_dispute)
     builder.add_node("triage", triage)
     builder.add_node("fraud_specialist", fraud_specialist)
@@ -24,7 +26,9 @@ def build_agent(**kwargs):
     builder.add_node("finalise", finalise)
 
     builder.add_edge(START, "load_case")
-    builder.add_edge("load_case", "classify_dispute")
+    builder.add_edge("load_case", "vulnerability_check")
+    # high-risk customer -> fast lane straight to a human; everyone else -> normal investigation
+    builder.add_conditional_edges("vulnerability_check", route_after_vulnerability)
     builder.add_edge("classify_dispute", "triage")
     builder.add_conditional_edges("triage", route_to_specialist)
     for specialist in ("fraud_specialist", "merchant_specialist", "friendly_fraud_specialist"):
