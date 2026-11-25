@@ -9,7 +9,7 @@ Numbers are from the latest eval (12:40). Update them if the final eval changes 
 ## Slide 1: Title
 
 - **Team and company name:** The Friendly Fraudsters | NatWest
-- **Names line:** Asia Sharif · Pradeep [surname] · Wasiu Ademola Adekola · Miriam [surname] · FSI Hackathon · 25 November 2026
+- **Names line:** Asia Sharif · Pradeep Senguttuvan · Wasiu Ademola Adekola · Miriam Lobete · FSI Hackathon · 25 November 2026
 
 ## Slide 2: The team
 
@@ -17,12 +17,12 @@ Numbers are from the latest eval (12:40). Update them if the final eval changes 
 
 | Name | Role | What they owned today |
 | --- | --- | --- |
-| Asia Sharif | [role] | Test data (25 labelled cases), evals and LangSmith experiments, ROI, notebook, slides |
-| Pradeep [surname] | [role] | Quality reviewer, graph and routing, vulnerability check and crisis fast lane |
-| Wasiu Ademola Adekola | [role] | Customer letter agent, human approval, demo |
-| Miriam [surname] | [role] | Fraud, merchant and friendly-fraud specialists, evidence pack |
+| Asia Sharif | Data and evals | Test data (25 labelled cases), evals and LangSmith experiments, ROI, notebook, slides |
+| Pradeep Senguttuvan | Graph and routing | Quality reviewer, graph and routing, vulnerability check and crisis fast lane |
+| Wasiu Ademola Adekola | Customer comms and demo | Customer letter agent, human approval, demo |
+| Miriam Lobete | Specialist agents | Fraud, merchant and friendly-fraud specialists, evidence pack |
 
-Fill in surnames and roles (for example "AI engineer", "Data scientist").
+Roles as on the final deck.
 
 ## Slide 3: What we're solving
 
