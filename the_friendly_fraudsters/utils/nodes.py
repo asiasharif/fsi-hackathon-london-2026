@@ -145,8 +145,13 @@ def triage(state: MyAgentState) -> dict:
 
     tx = state["transaction"]
     reasons = []
-    if state["merchant_history"]:
-        reasons.append(f"{len(state['merchant_history'])} earlier undisputed purchase(s) at {tx['merchant']}")
+    # An earlier purchase only suggests the customer shops there if they never disputed it.
+    disputed = {d.get("transaction_id") for d in state["dispute_history"]}
+    undisputed = [t for t in state["merchant_history"] if t["transaction_id"] not in disputed]
+    if undisputed:
+        ids = ", ".join(t["transaction_id"] for t in undisputed)
+        reasons.append(f"{len(undisputed)} earlier purchase(s) at {tx['merchant']} ({ids}), "
+                       "none of them in the customer's dispute history")
     if tx.get("device_known") and tx.get("3ds_passed"):
         reasons.append("Made on the customer's known device and passed 3-D Secure")
     lost_fraud_claims = [d for d in state["dispute_history"] if d["reason_code"] in FRAUD_CODES and d["outcome"] == "lost"]
@@ -271,6 +276,15 @@ Complaint: {case["complaint"]["text"]}
 Transaction: {case["transaction"]}
 Earlier purchases at this merchant: {case["merchant_history"] or "None"}
 Customer's past disputes: {case["dispute_history"] or "None"}
+
+The agent's own findings. The pack may quote or refer to these; that is not invented. Still fail the pack if a
+finding is stated as fact but contradicts the source data above:
+Vulnerability check: {_vulnerability_text(case) if case.get("vulnerability") else "Not provided"}
+Classifier's reason code: {case.get("reason_code", "Not provided")}
+Classifier's vulnerability signals: {case.get("vulnerable_signals", "Not provided") or "None"}
+Triage route and signals: {case.get("route", "Not provided")} {case.get("route_reasons", "")}
+Specialist assessment: {case.get("assessment", "Not provided")}
+Specialist recommendation: {case.get("recommendation", "Not provided")}
 
 Evidence pack:
 {evidence_pack}"""
