@@ -120,10 +120,9 @@ Before the demo: `cd the_friendly_fraudsters && uv run langgraph dev`. Start cas
    - resume with `{"decision": "approve", "notes": "ok"}`, then the letter: a gentle decline, **"This doesn't mean we think you've done anything wrong"**, Financial Ombudsman, 14 days to send more information
 2. **CMP-011: Jordan, "I can't cope with any of this anymore"** (crisis, about 30 seconds). Input `{"complaint_id": "CMP-011"}`. Show:
    - vulnerability check → **HIGH** → straight to a human (**fast lane**; the investigation is skipped, 2 seconds vs 35)
+   - the **fast-lane screen**: a banner *"High-risk vulnerable customer. Contact them now; the investigation is on hold"*, the vulnerability reasons and the customer's words. Resume with `{"decision": "contacted", "notes": "Called the customer"}` (the choices here are `contacted` or `escalated`, not approve)
    - the holding letter, written **without AI**: a person will call within 24 hours, **Samaritans 116 123**, 999 if in danger
 3. **Close on slide 7** (the scores).
-
-**Known quirk:** on CMP-011's approval screen, the `vulnerable_customer` field shows `None`; the vulnerability level itself is high. Ask Pradeep or Wasiu to fix it, or don't zoom in on that field.
 
 **Backup:** if Studio is slow or fails, open `dispute_agent.ipynb` section 4 (full sofa run with outputs saved).
 
