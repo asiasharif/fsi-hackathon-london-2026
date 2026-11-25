@@ -55,7 +55,7 @@ Branch: `data-evals`
 | 6 | Baseline eval: reason code 12/12, route 11/12, vulnerability 12/12, high-risk caught 0/1 | Before lunch | Done |
 | 7 | Notebook sections 1–3 | Before lunch | Done |
 | 8 | Commit, push and open a pull request so the team gets the data | Before lunch | Done |
-| 9 | Grow the dataset to 25 cases (vague, mixed, lookalikes, low vulnerability, traps). New baseline: reason 23/25, route 21/25, vulnerability 24/25, high-risk caught 0/2 | 14:00 | Done |
+| 9 | Grow the dataset to 25 cases (vague, mixed, lookalikes, low vulnerability, traps). New baseline: reason 23/25, route 21/25, vulnerability 24/25, **recommendation 19/23**, high-risk caught 0/2 | 14:00 | Done |
 | 10 | Full eval on the merged agent, with time and cost per case | 14:30 | To do |
 | 11 | Score the quality reviewer (`score_reviewer`) and the letters (`check_letter`) | 14:30 | To do |
 | 12 | Find failures, fix a prompt with Pradeep, re-run: the "after" score | 14:45 | To do |
@@ -77,7 +77,7 @@ Branch: `data-evals`
 **After lunch: Task 2, graph and routing**
 
 - [ ] Wire the review loop in `agent.py`: fail → send back with feedback, at most 2 retries, then to the human
-- [ ] Wire `vulnerability_check` straight after `load_case`, with the **high-risk fast lane** to a human (fixes the baseline's 0/1)
+- [ ] **Build** `vulnerability_check` (reads the complaint, profile and history; returns level, types and reasons) and wire it straight after `load_case`, with the **high-risk fast lane** to a human (fixes the baseline's 0/1)
 - [ ] Wire `customer_letter` after `human_approval`
 - [ ] Keep `main` running end to end; merge teammates' pull requests
 - [ ] Improve the classifier and triage rules with Asia, using the eval failures. **CMP-019 is a deliberate triage trap:** an unknown device + failed 3-D Secure should block the friendly-fraud route
@@ -89,7 +89,7 @@ Branch: `data-evals`
 - [ ] Write `customer_letter` in `utils/nodes.py`. It picks the letter type from the outcome: refund / chargeback, decline, friendly-fraud decline, needs more info, fast-lane holding message
 - [ ] Rules: plain English; declines mention the Financial Ombudsman Service; friendly-fraud letters never accuse; vulnerable customers get simpler words and a support contact; if a human overrode the AI, follow the human's decision
 - [ ] Test it: `from evals.test_sets import letter_cases, check_letter`. Target: every letter passes
-- [ ] Write `vulnerability_check`: reads the complaint, profile and history; returns level, types and reasons. High risk → fast lane
+- [x] ~~Write `vulnerability_check`~~: **moved to Pradeep**
 - [ ] Merge into `main` before lunch
 
 **After lunch: Task 4, memory, approval and demo**
@@ -107,7 +107,8 @@ Branch: `data-evals`
 - [ ] **Friendly-fraud specialist:** fair and careful, never accusing
 - [ ] Use the vulnerability flag: consider refunding while investigating if the customer can't afford the loss
 - [ ] Evidence pack sections: Summary, Reason code, Transaction details, Evidence, Customer history, **Vulnerability**, Recommendation (the quality reviewer checks these)
-- [ ] When the reviewer sends a pack back, rewrite it using `review_feedback`
+- [ ] When the reviewer sends a pack back, rewrite it using `review_feedback` (already wired by Pradeep)
+- [ ] **Eval finding:** recommendation is 19/23, and all 4 misses are the merchant specialist declining merchant cases for lack of proof (CMP-014, 015, 016, 024). Decline only when the evidence *contradicts* the customer
 - [ ] Agree with Pradeep what "good enough" means
 - [ ] Test: run the sample complaints and check the packs against `data/qa_test_packs.jsonl` (QA-01 and QA-02 are examples of good packs)
 
