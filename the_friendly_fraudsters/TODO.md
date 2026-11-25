@@ -17,10 +17,10 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 
 | Person | Done | Pending |
 | --- | --- | --- |
-| **Asia** (data, evals and **slides**) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–5 and 7, sourced ROI | Final eval after Mariam's and Pradeep's fixes, notebook sections 6 and 8, slide numbers for Wasiu |
+| **Asia** (data, evals and **slides**) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–5 and 7, sourced ROI | Final eval after Miriam's and Pradeep's fixes, notebook sections 6 and 8, slide numbers for Wasiu |
 | **Pradeep** (reviewer, then graph) | Quality reviewer (**8/8 on the test packs**), review loop, vulnerability check + **fast lane** (crisis cases 2/2), approval screen shows vulnerability, triage fixes incl. **CMP-019 trap**, classifier reason-code definitions (route and reason code now **25/25**) | Keep `main` running; merge teammates' work |
 | **Wasiu** (letters, then demo) | Customer letter agent with fast-lane holding message, 63 passing tests, sofa letter passes every rule | Test runs pollute `dispute_history.jsonl`, memory visible on repeat disputes, demo script and rehearsal |
-| **Mariam** (specialists) | Started | **Everything in Task 3.** Biggest win: merchant specialist (CMP-002, 014, 015, 016). No branch on GitHub yet: please push |
+| **Miriam** (specialists) | Started | **Everything in Task 3.** Biggest win: merchant specialist (CMP-002, 014, 015, 016). No branch on GitHub yet: please push |
 
 ## Scoreboard (25 cases, LangSmith dataset `friendly-fraudsters-disputes-v3`)
 
@@ -30,7 +30,7 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 | Vulnerability spotted correctly | 24 / 25 | **25 / 25** | Done |
 | Route correct | 21 / 25 | **25 / 25** | Done |
 | Reason code correct | 23 / 25 | **25 / 25** | Done |
-| Recommendation correct (fast-lane excluded) | 19 / 23 | **22 / 23** | Mariam (CMP-015 left) |
+| Recommendation correct (fast-lane excluded) | 19 / 23 | **22 / 23** | Miriam (CMP-015 left) |
 | Quality reviewer on the 8 test packs | n/a | **8 / 8** | Done |
 | Median time per case (investigation steps) | 3.6 s | 4.8 s | |
 
@@ -56,7 +56,7 @@ Scores move by ±1 between runs because the AI isn't perfectly consistent, so we
 ## Shared decisions
 
 - [x] **New field names in `utils/state.py`**: agreed and used (`vulnerability`, `review_result`, `review_feedback`, `send_back_to`, `retry_count`, `customer_letter`)
-- [ ] **What "good enough" means for an evidence pack** (Pradeep and Mariam)
+- [ ] **What "good enough" means for an evidence pack** (Pradeep and Miriam)
 - [ ] **ROI assumption to agree:** the % of handling effort the agent removes (proposed 60%). Everything else is sourced: see KPIs and ROI
 
 ---
@@ -78,7 +78,7 @@ Branch: `data-evals`
 | 9 | Notebook sections 1–5 and 7, including the sofa case end to end with the review loop | Morning | Done |
 | 10 | Notebook sections 6 (results table) and 8 (next steps) | Before lunch | Done |
 | 11 | Slide notes: content per slide, demo script, Q&A answers, sources (`SLIDE_NOTES.md`) | Before lunch | Done |
-| 12 | Pull Mariam's and Pradeep's fixes; final eval, run twice | About 14:30 | To do |
+| 12 | Pull Miriam's and Pradeep's fixes; final eval, run twice | About 14:30 | To do |
 | 13 | Score all 8 letter cases with the real agent | About 14:30 | To do |
 | 14 | **Slides** from the LangChain template (`HACK_NATWEST_THEFRIENDLYFRAUDSTERS`) | About 15:15 | To do |
 | 15 | Final commit and push | Before 15:45 | To do |
@@ -105,7 +105,7 @@ Branch: `data-evals`
 - [ ] Demo script with 2–3 cases in LangSmith Studio: CMP-003 (sofa, vulnerable, review loop), CMP-004 (friendly-fraud decline), CMP-011 or 025 (crisis fast lane)
 - [ ] Rehearse to under 5 minutes
 
-## Mariam: Task 3, specialists and evidence pack
+## Miriam: Task 3, specialists and evidence pack
 
 **Please push a branch soon, even unfinished, and pull `main` first.** Pradeep is also editing `utils/nodes.py`, so consider putting new prompts in `utils/specialists.py` to avoid merge conflicts.
 
