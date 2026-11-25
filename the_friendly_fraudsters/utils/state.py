@@ -44,6 +44,11 @@ class MyAgentState(MyAgentInput):
     recommendation: Literal["file_chargeback", "refund_customer", "decline_claim"]
     # set by draft_evidence_pack
     evidence_pack: str
+    # set by quality_review (the pack goes back to draft_evidence_pack at most MAX_REVIEW_RETRIES times)
+    review_passed: bool
+    review_issues: list[str]    # what is wrong with the pack, empty if it passed
+    review_feedback: str        # instructions for the rewrite
+    review_attempts: int        # how many times the pack has been reviewed
     # set by human_approval
     decision: str
     reviewer_notes: str
