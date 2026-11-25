@@ -9,7 +9,7 @@ Numbers are from the final eval (14:15, all agents merged; same result on 2 runs
 ## Slide 1: Title
 
 - **Team and company name:** The Friendly Fraudsters | NatWest
-- **Names line:** Asia Sharif · Pradeep Senguttuvan · Wasiu Ademola Adekola · Miriam Lobete · FSI Hackathon · 25 November 2026
+- **Names line:** Asia Sharif · Pradeepvarma Senguttuvan · Wasiu Ademola Adekola · Miriam Lobete · FSI Hackathon · 25 November 2026
 
 ## Slide 2: The team
 
@@ -18,7 +18,7 @@ Numbers are from the final eval (14:15, all agents merged; same result on 2 runs
 | Name | Role | What they owned today |
 | --- | --- | --- |
 | Asia Sharif | Data and evals | Test data (25 labelled cases), evals and LangSmith experiments, ROI, notebook, slides |
-| Pradeep Senguttuvan | Graph and routing | Quality reviewer, graph and routing, vulnerability check and crisis fast lane |
+| Pradeepvarma Senguttuvan | Graph and routing | Quality reviewer, graph and routing, vulnerability check and crisis fast lane |
 | Wasiu Ademola Adekola | Customer comms and demo | Customer letter agent, human approval, demo |
 | Miriam Lobete | Specialist agents | Fraud, merchant and friendly-fraud specialists, evidence pack |
 
@@ -52,12 +52,12 @@ The customer never mentions self-harm. Our agent recognises crisis language and 
 | --- | --- | --- |
 | **Customer** | Fast, fair answers; a person on every crisis | Crisis to a human in under 5 s |
 | **Colleague** | The agent investigates; the analyst decides | 22 / 23 packs ready first time |
-| **Company** | Lower cost, fewer wrong chargebacks | ≈ £2.4M a year + Consumer Duty |
+| **Company** | Lower cost, reduced incorrect chargebacks | ≈ £2.4M a year + Consumer Duty |
 
 **What to say (about 30 s):**
 - **Customer:** half of UK adults show signs of vulnerability (FCA Financial Lives, 49%), so crisis cases go to a person in under 5 seconds (our CMP-011 run: 4.8 s), letters never accuse, and every decline names the Financial Ombudsman.
 - **Colleague:** the agent does the reading, classifying and write-up; the analyst gets a decision-ready evidence pack (22 of 23 pass our quality reviewer first time) and makes the call. The AI never decides alone.
-- **Company:** about £2.4M a year on card-not-present fraud disputes alone (slide 9), fewer wrong chargebacks from friendly fraud (48% of consumers have mistakenly disputed a real purchase, Mastercard), and an audit trail for Consumer Duty and the 8-week deadline.
+- **Company:** about £2.4M a year on card-not-present fraud disputes alone (slide 9), reduced incorrect chargebacks from friendly fraud (48% of consumers have mistakenly disputed a real purchase, Mastercard), and an audit trail for Consumer Duty and the 8-week deadline.
 
 Icons: hand with heart (customer), person in a tie (colleague), bank building (company), in the deck's blue.
 
