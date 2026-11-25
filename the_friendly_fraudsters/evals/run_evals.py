@@ -20,7 +20,7 @@ from langsmith import Client, evaluate
 
 from utils import db
 from utils.nodes import (classify_dispute, fraud_specialist, friendly_fraud_specialist, load_case,
-                         merchant_specialist, triage)
+                         merchant_specialist, triage, vulnerability_check)
 
 SPECIALISTS = {"fraud": fraud_specialist, "merchant": merchant_specialist, "friendly_fraud": friendly_fraud_specialist}
 
@@ -46,9 +46,9 @@ def target(inputs: dict) -> dict:
     start = time.perf_counter()
     state = {"complaint_id": inputs["complaint_id"]}
     state |= load_case(state)
-    state |= classify_dispute(state)
+    state |= vulnerability_check(state)
+    state |= classify_dispute(state)  # still scored for high-risk cases, even though the graph skips it for them
     state |= triage(state)
-    # Until the vulnerability_check step exists, read what the classifier flagged.
     level = state.get("vulnerability", {}).get("level")
     flagged = (level not in (None, "none")) if level else bool(state.get("vulnerable_signals"))
     route = state.get("route")
