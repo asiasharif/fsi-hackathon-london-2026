@@ -1,6 +1,6 @@
 # The Friendly Fraudsters | NatWest: Card Dispute Agent
 
-Team plan, 24 Nov 2026
+A LangGraph agent that investigates card disputes, checks its own work and hands every decision to a human, with extra care for vulnerable customers. FSI Hackathon London, 25 Nov 2026. All data is synthetic.
 
 ## Submission materials
 
@@ -9,18 +9,40 @@ Team plan, 24 Nov 2026
 - **Notebook with a full run and results:** [dispute_agent.ipynb](dispute_agent.ipynb)
 - **Demo script and Q&A:** [SLIDE_NOTES.md](SLIDE_NOTES.md)
 
-## Getting started
+## How to run it
+
+**You need:** Python 3.11+, [uv](https://docs.astral.sh/uv/), and a LangSmith API key (the model is reached through the LangSmith LLM Gateway).
+
+**1. Install** (from the repo root):
 
 ```bash
 git clone https://github.com/asiasharif/fsi-hackathon-london-2026.git
 cd fsi-hackathon-london-2026
 uv sync --all-packages
-cp .env.example .env              # add your own keys; never commit .env
-cd the_friendly_fraudsters
-git checkout -b <your-role>       # e.g. data-evals, graph-routing, specialists, memory-demo
-uv run langgraph dev              # opens LangSmith Studio; input {"complaint_id": "CMP-001"}
-uv run python -m evals.run_evals  # scores the agent in LangSmith
+cp .env.example .env    # then set LANGSMITH_API_KEY, LANGSMITH_WORKSPACE_ID and ATTENDEE_NAME; never commit .env
 ```
+
+**2. Run the agent in LangSmith Studio** (from `the_friendly_fraudsters/`):
+
+```bash
+cd the_friendly_fraudsters
+uv run langgraph dev    # opens Studio in the browser; choose the graph card_dispute_agent
+```
+
+- Input `{"complaint_id": "CMP-004"}` (friendly fraud). It pauses at **human_approval**; resume with `{"decision": "approve", "notes": "ok"}` to get the customer letter.
+- Input `{"complaint_id": "CMP-011"}` (crisis). It goes straight to the fast lane; resume with `{"decision": "contacted", "notes": "Called the customer"}`.
+- Any complaint from `CMP-001` to `CMP-025` in `data/complaints.jsonl` works. Every run is traced in LangSmith.
+
+**3. Check the results:**
+
+```bash
+uv run python -m evals.check_data     # dataset consistency check (instant, no model calls)
+uv run python -m evals.run_evals      # scores all 25 cases in LangSmith (about 2 minutes)
+uv run --with pytest python -m pytest -q tests    # 72 unit tests (no model calls)
+uv run jupyter notebook dispute_agent.ipynb       # full walkthrough; outputs are already saved
+```
+
+Expected eval result: reason code 25/25, route 25/25, vulnerability 25/25, recommendation 23/23, crisis cases 2/2.
 
 ## How we use git
 
