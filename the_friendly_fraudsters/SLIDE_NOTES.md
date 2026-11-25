@@ -111,6 +111,17 @@ Small note under the table: *25 hand-labelled synthetic cases, including traps: 
 
 **If asked "is 100% realistic?":** it's 25 synthetic cases we designed, including traps. It shows the agent handles every situation we tested, not that it's perfect in production, and every case still goes to a human.
 
+
+## Slide 9: Challenges (new)
+
+**What was hard, and how we fixed it** (4 cards: problem → fix → measured result):
+- Crisis customers got normal handling (0 / 2) → vulnerability check + fast lane → **2 / 2, under 5 s**
+- A lookalike (CMP-019) fooled our rules → unknown device or failed 3-D Secure blocks the friendly-fraud route → **route 25 / 25**
+- AI answers varied between runs (21–22 / 23) → ran every eval twice, tightened the specialists → **23 / 23 on 12 straight runs**
+- Traces exposed a hidden bug (evidence packs missing the history) → passed it in → **first-time pass 12 → 22 / 23**
+
+Full evidence: `AGENT_LIFECYCLE_EVIDENCE.pdf`.
+
 ## Slide 9: Business value and what's next (optional)
 
 - **Business value:** about **£2.4M a year** saved on card-not-present fraud disputes alone: 3.2M UK cases in 2025 (UK Finance) × NatWest's 16.5% current-account share (NatWest Group) × about £7.70 per dispute (Mastercard, US benchmark) × 60% of handling effort removed (**our assumption**: a human still approves every case). Plus faster answers, consistent vulnerable-customer care and no missed 8-week deadlines. Merchant disputes and friendly fraud aren't counted, so the real figure is likely higher.
