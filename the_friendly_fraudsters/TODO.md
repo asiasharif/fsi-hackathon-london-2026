@@ -178,6 +178,17 @@ Annual saving   = saving per case × cases per year
 | NatWest share of UK current accounts | **16.5%**, 19M Retail Banking customers (Dec 2025) | [NatWest Group investment case](https://investors.natwestgroup.com/our-investment-case) |
 | Cost for a bank to process one dispute | **$9.08–$10.32** (US benchmark) ≈ £7.20–£8.15 at $1 ≈ £0.79 | [Mastercard, true cost of a chargeback](https://www.mastercard.com/gb/en/news-and-trends/Insights/2025/what-s-the-true-cost-of-a-chargeback-in-2025.html) |
 | Consumers who have mistakenly disputed a real purchase | **48%** (supports our friendly-fraud design) | Mastercard, as above |
+| UK card-not-present fraud cases, **2025** (latest annual figures) | **3.2 million** (up 13%), losses £423.5M | [UK Finance, Annual Fraud Report 2026 press release (Jun 2026)](https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2026-press-release) |
+| UK unauthorised fraud cases, **2025** | **3.81 million** (up 11%), £703.4M lost; banks refund almost all cases | UK Finance 2026, as above |
+| Share of disputes that are friendly fraud | about **1 in 5** (2025) | [Mastercard & Javelin, first-party fraud (updated Jun 2026)](https://www.mastercard.com/gb/en/news-and-trends/Insights/2024/first-party-fraud-why-is-it-so-hard-to-tackle.html) |
+| Global growth in chargebacks | **37%** from 2025 to 2029, reaching 359M a year | [Mastercard & Datos Insights, true cost of a chargeback (updated Jun 2026)](https://www.mastercard.com/gb/en/news-and-trends/Insights/2025/what-s-the-true-cost-of-a-chargeback-in-2025.html) |
+| Where banks' dispute costs come from | mainly **operational**: staff time in customer service and back-office fraud teams | Mastercard, true cost of a chargeback, as above |
+| Cost of a chargeback vs the item | costs **often exceed the value of the item** disputed | Mastercard, citing Javelin, as above |
+| Back-office staff on disputes (US benchmark) | **200+** staff at most US banks | Mastercard, as above |
+| UK adults with characteristics of vulnerability | **49%** (26.4M), May 2024 | [FCA Financial Lives 2024 key findings (May 2025)](https://www.fca.org.uk/publication/financial-lives/financial-lives-survey-2024-key-findings.pdf) |
+| UK adults with low financial resilience | **24%** (13.1M), May 2024 | FCA Financial Lives 2024, as above |
+| Refund deadline for unauthorised payments | by the **end of the next business day** after the bank becomes aware | [Payment Services Regulations 2017, regulation 76](https://www.legislation.gov.uk/uksi/2017/752/regulation/76/made) |
+| Consumer Duty | since July 2023, firms must deliver good outcomes for all customers, **including vulnerable customers** | [FCA, delivering good outcomes for vulnerable customers](https://www.fca.org.uk/publications/good-and-poor-practice/delivering-vulnerable-customers) |
 
 **ROI estimate (fraud disputes only, so conservative):**
 
