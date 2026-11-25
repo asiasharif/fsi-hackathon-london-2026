@@ -23,11 +23,11 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 
 ## Submission checklist (everyone)
 
-- [ ] Agree our **company name**. Format: `The Friendly Fraudsters | <Company>`
+- [x] Company name: **The Friendly Fraudsters | NatWest**
 - [ ] README has team name, company, use case and how to run it
 - [ ] `dispute_agent.ipynb` (the notebook) and `agent.py` committed to `main`
 - [ ] Evals and datasets committed (`data/`, `evals/`)
-- [ ] 5-minute deck from the LangChain template, named `HACK_COMPANYNAME_TEAMNAME`
+- [ ] 5-minute deck from the LangChain template, named `HACK_NATWEST_THEFRIENDLYFRAUDSTERS`
 - [ ] Fork link and slides submitted via the QR code / link in the master deck, and emailed to both hosts **by 15:45**
 
 ## Shared decisions (agree in the first 15 minutes)
@@ -37,7 +37,7 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
   - `review_result` (`pass` / `fail`), `review_feedback`, `send_back_to`, `retry_count`
   - `customer_letter`, `letter_type`
 - [ ] **What "good enough" means for an evidence pack** (Pradeep and Mariam)
-- [ ] **ROI assumptions** (see the KPIs and ROI section): manual minutes per case, review minutes with the agent, analyst cost per hour, cases per year
+- [ ] **ROI assumption to agree:** the % of handling effort the agent removes (proposed 60%). Everything else is sourced: see KPIs and ROI
 
 ---
 
@@ -54,8 +54,8 @@ Branch: `data-evals`
 | 5 | Letter test set for Wasiu: 8 scenarios with must / must-not rules (`data/letter_test_cases.jsonl`) | Before lunch | Done |
 | 6 | Baseline eval: reason code 12/12, route 11/12, vulnerability 12/12, high-risk caught 0/1 | Before lunch | Done |
 | 7 | Notebook sections 1–3 | Before lunch | Done |
-| 8 | Commit, push and open a pull request so the team gets the data | Before lunch | To do |
-| 9 | Grow the dataset to 25 cases: harder, vaguer complaints, mixed problems, some **low** vulnerability cases (then bump `DATASET` to v2 in `evals/run_evals.py`) | 14:00 | To do |
+| 8 | Commit, push and open a pull request so the team gets the data | Before lunch | Done |
+| 9 | Grow the dataset to 25 cases (vague, mixed, lookalikes, low vulnerability, traps). New baseline: reason 23/25, route 21/25, vulnerability 24/25, high-risk caught 0/2 | 14:00 | Done |
 | 10 | Full eval on the merged agent, with time and cost per case | 14:30 | To do |
 | 11 | Score the quality reviewer (`score_reviewer`) and the letters (`check_letter`) | 14:30 | To do |
 | 12 | Find failures, fix a prompt with Pradeep, re-run: the "after" score | 14:45 | To do |
@@ -80,7 +80,7 @@ Branch: `data-evals`
 - [ ] Wire `vulnerability_check` straight after `load_case`, with the **high-risk fast lane** to a human (fixes the baseline's 0/1)
 - [ ] Wire `customer_letter` after `human_approval`
 - [ ] Keep `main` running end to end; merge teammates' pull requests
-- [ ] Improve the classifier and triage rules with Asia, using the eval failures
+- [ ] Improve the classifier and triage rules with Asia, using the eval failures. **CMP-019 is a deliberate triage trap:** an unknown device + failed 3-D Secure should block the friendly-fraud route
 
 ## Wasiu: customer letter agent, then Task 4, memory, approval and demo
 
@@ -155,5 +155,29 @@ Annual saving   = saving per case × cases per year
 | Manual minutes per case | **Assumption**, or a public figure if we find a source |
 | Analyst cost per hour | **Assumption** |
 | Cases per year | **Assumption**, e.g. a mid-sized UK bank |
+
+**Public figures (all verified from the source pages, no internal data):**
+
+| Figure | Value | Source |
+| --- | --- | --- |
+| UK remote purchase (card-not-present) fraud cases, 2024 | nearly **2.6 million** (up 22%), losses just under £400M | [UK Finance, Annual Fraud Report 2025 press release](https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2025-press-release) |
+| UK confirmed unauthorised fraud cases, 2024 | **3.13 million**, £722M lost | UK Finance, as above |
+| Complaints to UK firms, 2025 H2 | **1.74M** total; credit cards 218,456; current accounts 492,149; **55.5% upheld** | [FCA aggregate complaints data 2025 H2](https://www.fca.org.uk/data/aggregate-complaints-data-2025-h2) |
+| NatWest share of UK current accounts | **16.5%**, 19M Retail Banking customers (Dec 2025) | [NatWest Group investment case](https://investors.natwestgroup.com/our-investment-case) |
+| Cost for a bank to process one dispute | **$9.08–$10.32** (US benchmark) ≈ £7.20–£8.15 at $1 ≈ £0.79 | [Mastercard, true cost of a chargeback](https://www.mastercard.com/gb/en/news-and-trends/Insights/2025/what-s-the-true-cost-of-a-chargeback-in-2025.html) |
+| Consumers who have mistakenly disputed a real purchase | **48%** (supports our friendly-fraud design) | Mastercard, as above |
+
+**ROI estimate (fraud disputes only, so conservative):**
+
+| Step | Figure | Type |
+| --- | --- | --- |
+| UK card-not-present fraud cases a year | 2.6M | Sourced |
+| NatWest's share, if fraud is proportional to current-account share | 16.5% → about **430,000 cases a year** | Assumption (sourced share) |
+| Cost per dispute | about **£7.70** | Sourced (US benchmark) |
+| Handling effort removed by the agent (a human still reviews every case) | **60%** | Assumption, team to agree |
+| AI cost per case | measured from LangSmith traces | Measured |
+| **Estimated saving** | 430,000 × £7.70 × 60% ≈ **£2M a year**, minus AI cost | |
+
+Caveats to say out loud: the cost figure is a US benchmark; merchant disputes and friendly fraud are **not** counted, so the real figure is likely higher; UK Finance published 2025 figures on 25 Nov 2026 that we have not yet checked. Beyond money: faster answers, consistent vulnerable-customer care, and no missed 8-week deadlines.
 
 Label every assumption clearly on the slide. The saving comes from **faster investigation, not removing the human**: that's honest, and a good answer for Q&A.

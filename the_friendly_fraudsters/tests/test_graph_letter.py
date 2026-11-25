@@ -22,6 +22,8 @@ class FakeModel:
             return nodes.Classification(reason_code="fraud_card_not_present", vulnerable_signals=[])
         if name == "Assessment":
             return nodes.Assessment(assessment="Known device, earlier purchases.", recommendation="decline_claim")
+        if name == "QualityReview":
+            return nodes.QualityReview(issues=[], verdict="pass", send_back_to="human_approval", feedback="")
         if name == "Letter":
             return cl.Letter(subject="About your payment", body=(
                 "Dear Tom,\n\nThank you for asking about the £89.99 payment to PixelGames Store. Our records show it was "

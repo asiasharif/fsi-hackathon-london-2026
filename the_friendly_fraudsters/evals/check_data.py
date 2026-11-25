@@ -57,7 +57,9 @@ def check() -> list[str]:
             state |= load_case(state)
             state["reason_code"] = c["expected_reason_code"]
             got = triage(state)["route"]
-            if got != c["expected_route"]:
+            if got != c["expected_route"] and c.get("known_triage_gap"):
+                print(f"  Known triage gap (expected, for Pradeep to fix): {cid} rules give '{got}', truth is '{c['expected_route']}'")
+            elif got != c["expected_route"]:
                 problems.append(f"{cid}: triage rules give '{got}' but label says '{c['expected_route']}'")
 
     return problems
