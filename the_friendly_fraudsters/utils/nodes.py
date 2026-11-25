@@ -12,13 +12,14 @@ from datetime import date, timedelta
 from typing import Literal
 
 from langchain.chat_models import init_chat_model
+from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from tools.cases import get_complaint, get_customer, get_dispute_history, get_merchant_history, get_transaction
-from tools.memory import record_dispute
+from tools.memory import memory_summary, recall_disputes, record_dispute
 from utils.models import model
-from utils.state import FRAUD_CODES, MyAgentState, ReasonCode, SendBackTo, VulnerabilityLevel, VulnerabilityType
+from utils.state import FRAUD_CODES, MyAgentContext, MyAgentState, ReasonCode, SendBackTo, VulnerabilityLevel, VulnerabilityType
 
 
 def llm():
@@ -327,13 +328,16 @@ def _review_feedback_for(state: MyAgentState, step: str) -> str:
 
 
 # ---------------------------------------------------------------- 6. human approval + memory (owner: memory/HITL)
-def human_approval(state: MyAgentState) -> dict:
+def human_approval(state: MyAgentState, runtime: Runtime[MyAgentContext]) -> dict:
     vulnerability = state.get("vulnerability") or {}
+    memory = memory_summary(state.get("dispute_history") or [],
+                            recall_disputes(runtime.store, state["complaint"]["customer_id"]))
     if state.get("route") == "fast_lane":
         tx = state["transaction"]
         answer = interrupt({
             "FAST_LANE": "High-risk vulnerable customer. Contact them now; the investigation is on hold.",
             "vulnerability": vulnerability,
+            "memory": memory,
             "complaint_id": state["complaint_id"],
             "customer": state["customer"].get("name"),
             "summary": f"Disputes {tx.get('currency', '')} {tx.get('amount')} to {tx.get('merchant')} on "
@@ -344,6 +348,7 @@ def human_approval(state: MyAgentState) -> dict:
 
     answer = interrupt({
         "vulnerability": vulnerability,
+        "memory": memory,
         "complaint_id": state["complaint_id"],
         "recommendation": state["recommendation"],
         "vulnerable_customer": bool(vulnerability.get("vulnerable") or state["vulnerable_signals"]
@@ -359,13 +364,16 @@ def human_approval(state: MyAgentState) -> dict:
     return {"decision": answer["decision"], "reviewer_notes": answer.get("notes", "")}
 
 
-def finalise(state: MyAgentState) -> dict:
+def finalise(state: MyAgentState, runtime: Runtime[MyAgentContext]) -> dict:
     record_dispute(
+        runtime.store,
         customer_id=state["complaint"]["customer_id"],
+        complaint_id=state["complaint_id"],
         transaction_id=state["transaction"]["transaction_id"],
         merchant=state["transaction"]["merchant"],
         reason_code=state.get("reason_code", "unclassified"),  # the fast lane skips classification
         outcome="pending",
-        notes=f"{state.get('recommendation', 'fast_lane')} ({state['decision']}). {state['reviewer_notes']}".strip(),
+        decision=state["decision"],
+        notes=f"{state.get('recommendation') or 'fast_lane'}. {state['reviewer_notes']}".strip(),
     )
     return {}
