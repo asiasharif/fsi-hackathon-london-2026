@@ -1,4 +1,4 @@
-# The Friendly Fraudsters: Card Dispute Agent
+# The Friendly Fraudsters | NatWest: Card Dispute Agent
 
 Team plan, 24 Nov 2026
 

@@ -13,14 +13,14 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 | **15:45** | **Submission deadline:** fork link and slides |
 | 16:00 | Demos: 5 minutes plus Q&A |
 
-## Status at a glance (updated 12:40)
+## Status at a glance (updated after every PR was merged, up to #13)
 
 | Person | Done | Pending |
 | --- | --- | --- |
-| **Asia** (data, evals and **slides**) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–5 and 7, sourced ROI | Final eval after Miriam's and Pradeep's fixes, notebook sections 6 and 8, slide numbers for Wasiu |
-| **Pradeep** (reviewer, then graph) | Quality reviewer (**8/8 on the test packs**), review loop, vulnerability check + **fast lane** (crisis cases 2/2), approval screen shows vulnerability, triage fixes incl. **CMP-019 trap**, classifier reason-code definitions (route and reason code now **25/25**) | Keep `main` running; merge teammates' work |
-| **Wasiu** (letters, then demo) | Customer letter agent with fast-lane holding message, 63 passing tests, sofa letter passes every rule | Test runs pollute `dispute_history.jsonl`, memory visible on repeat disputes, demo script and rehearsal |
-| **Miriam** (specialists) | Started | **Everything in Task 3.** Biggest win: merchant specialist (CMP-002, 014, 015, 016). No branch on GitHub yet: please push |
+| **Asia** (data, evals and **slides**) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–8, sourced ROI, slide notes, submission deck | Put the final scoreboard into the notebook and deck, final push |
+| **Pradeep** (reviewer, then graph) | Quality reviewer (**8/8 on the test packs**), review loop, vulnerability check + **fast lane** (crisis cases 2/2), triage fixes incl. **CMP-019 trap**, classifier reason-code definitions, final eval run twice, all 25 cases run end to end, evidence pack fix (**22/23 pass review first time**) | Keep `main` running until submission |
+| **Wasiu** (letters, then demo) | Customer letter agent with fast-lane holding message, memory in the LangGraph store (test runs no longer change the data), memory on the approval screen, 69 passing tests, `DEMO.md` runbook | Rehearse the demo to under 5 minutes |
+| **Miriam** (specialists) | Fraud, merchant and friendly-fraud specialists, merged in PR #13 (recommendation **23/23**) | Nothing open |
 
 ## Scoreboard (25 cases, LangSmith dataset `friendly-fraudsters-disputes-v3`)
 
@@ -30,11 +30,15 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 | Vulnerability spotted correctly | 24 / 25 | **25 / 25** | Done |
 | Route correct | 21 / 25 | **25 / 25** | Done |
 | Reason code correct | 23 / 25 | **25 / 25** | Done |
-| Recommendation correct (fast-lane excluded) | 19 / 23 | **22 / 23** | Miriam (CMP-015 left) |
+| Recommendation correct (fast-lane excluded) | 19 / 23 | **23 / 23** | Done |
 | Quality reviewer on the 8 test packs | n/a | **8 / 8** | Done |
+| Letters passing every rule (8 scenarios, real agent) | n/a | **8 / 8** | Done |
+| Full graph, all 25 cases end to end (through to the letter) | n/a | **25 / 25, no errors** | Done |
+| Evidence packs passing review first time | n/a | 12 / 23 → **22 / 23** | Done |
 | Median time per case (investigation steps) | 3.6 s | 4.8 s | |
+| Median time per case, full graph (slowest case) | n/a | **17 s (25 s)** | |
 
-Scores move by ±1 between runs because the AI isn't perfectly consistent, so we run the final eval twice. Run it yourself: `uv run python -m evals.run_evals`
+Scores move by ±1 between runs because the AI isn't perfectly consistent, so we run the final eval twice. **Final eval, run twice after PR #13: no misses either time.** Run it yourself: `uv run python -m evals.run_evals`
 
 ## How we're judged (30 points)
 
@@ -47,16 +51,16 @@ Scores move by ±1 between runs because the AI isn't perfectly consistent, so we
 ## Submission checklist (everyone)
 
 - [x] Company name: **The Friendly Fraudsters | NatWest**
-- [ ] README title shows team name **and company** (currently missing "NatWest"), use case and how to run it
+- [x] README title shows team name **and company**, use case and how to run it
 - [ ] `dispute_agent.ipynb` (the notebook) and `agent.py` committed to `main` (notebook is in; final version after the last eval)
 - [x] Evals and datasets committed (`data/`, `evals/`)
-- [ ] 5-minute deck from the LangChain template, named `HACK_NATWEST_THEFRIENDLYFRAUDSTERS`
+- [x] 5-minute deck from the LangChain template, named `HACK_NATWEST_THEFRIENDLYFRAUDSTERS` (`.pptx` and `.pdf` committed; update it with the final scoreboard)
 - [ ] Fork link and slides submitted via the QR code / link in the master deck, and emailed to both hosts **by 15:45**
 
 ## Shared decisions
 
 - [x] **New field names in `utils/state.py`**: agreed and used (`vulnerability`, `review_result`, `review_feedback`, `send_back_to`, `retry_count`, `customer_letter`)
-- [ ] **What "good enough" means for an evidence pack** (Pradeep and Miriam)
+- [x] **What "good enough" means for an evidence pack:** the reviewer's 8-point checklist in `review_pack` (grounded, nothing invented, reason code fits, recommendation matches the evidence, complete, vulnerability handled, no accusing tone, decision-ready)
 - [ ] **ROI assumption to agree:** the % of handling effort the agent removes (proposed 60%). Everything else is sourced: see KPIs and ROI
 
 ---
@@ -78,9 +82,9 @@ Branch: `data-evals`
 | 9 | Notebook sections 1–5 and 7, including the sofa case end to end with the review loop | Morning | Done |
 | 10 | Notebook sections 6 (results table) and 8 (next steps) | Before lunch | Done |
 | 11 | Slide notes: content per slide, demo script, Q&A answers, sources (`SLIDE_NOTES.md`) | Before lunch | Done |
-| 12 | Pull Miriam's and Pradeep's fixes; final eval, run twice | About 14:30 | To do |
-| 13 | Score all 8 letter cases with the real agent | About 14:30 | To do |
-| 14 | **Slides** from the LangChain template (`HACK_NATWEST_THEFRIENDLYFRAUDSTERS`) | About 15:15 | To do |
+| 12 | Pull Miriam's and Pradeep's fixes; final eval, run twice | About 14:30 | Done (Pradeep ran it twice: no misses) |
+| 13 | Score all 8 letter cases with the real agent | About 14:30 | Done (8 / 8) |
+| 14 | **Slides** from the LangChain template (`HACK_NATWEST_THEFRIENDLYFRAUDSTERS`) | About 15:15 | Done; put the final scoreboard in |
 | 15 | Final commit and push | Before 15:45 | To do |
 
 ## Pradeep: quality review agent, then Task 2, graph and routing
@@ -93,7 +97,8 @@ Branch: `data-evals`
 - [x] Triage counts only undisputed earlier purchases; reviewer sees the agent's own findings
 - [x] **CMP-019 trap (fixed):** real fraud routed to friendly fraud. An unknown device + failed 3-D Secure should block the friendly-fraud route
 - [x] Classifier on mixed problems (fixed): CMP-016 ("I think they charged me twice", but the data shows one payment) and CMP-018 (4am foreign payment framed as a cancelled subscription). Weigh the payment data over the customer's wording
-- [ ] Keep `main` running end to end; merge teammates' pull requests
+- [x] Keep `main` running end to end; merge teammates' pull requests (all merged; all 25 cases run end to end)
+- [x] Evidence pack gets the earlier purchases and past disputes; the reviewer no longer fails reasonable reason codes or plain anger. Packs passing review first time: 12 / 23 → 22 / 23; slowest case 83 s → 25 s
 
 ## Wasiu: customer letter agent, then Task 4, memory, approval and demo
 
@@ -115,8 +120,8 @@ Branch: `data-evals`
 - [x] Use the vulnerability level: consider refunding while investigating if the customer can't afford the loss
 - [x] Evidence pack sections: Summary, Reason code, Transaction details, Evidence, Customer history, **Vulnerability**, Recommendation
 - [x] Reviewer feedback reaches the specialists and the evidence pack (wired by Pradeep)
-- [ ] Test: `uv run python -m evals.run_evals`. Recommendation is now **22 / 23**; target 23 / 23
-- [ ] Merge by about 14:30
+- [x] Test: `uv run python -m evals.run_evals`. Recommendation **23 / 23**
+- [x] Merged (PR #13)
 
 ---
 
@@ -139,14 +144,14 @@ The judges' proof that the agent works: they can open it on GitHub and see the o
 
 **Quality KPIs** (measured by the evals):
 
-- Reason code correct: X / 25
-- Route correct: X / 25
-- **Missed high-risk vulnerable customers: must be 0**
-- False vulnerability alarms
-- Planted mistakes caught by the quality reviewer: X / 6
-- Letters passing every rule: X / 8
+- Reason code correct: **25 / 25**
+- Route correct: **25 / 25**
+- **Missed high-risk vulnerable customers: 0** (2 / 2 caught)
+- False vulnerability alarms: **0** (vulnerability flag 25 / 25)
+- Planted mistakes caught by the quality reviewer: **6 / 6** (and both good packs passed)
+- Letters passing every rule: **8 / 8**
 
-**Speed and cost KPIs** (measured from LangSmith traces): time per case, tokens and cost per case.
+**Speed and cost KPIs** (measured from LangSmith traces): time per case (**median 17 s for the full graph, slowest 25 s**), tokens and cost per case.
 
 **ROI:**
 
