@@ -2,11 +2,14 @@
 
 Owner: data/evals. Run from the_friendly_fraudsters/:  uv run python -m evals.run_evals
 
-It runs the first part of the graph (load -> classify -> triage), which is quick and cheap, and scores:
+It runs the investigation part of the graph (load -> classify -> triage -> specialist), with no evidence pack,
+review, human or letter, so it is quick and cheap. It scores:
 - reason_code_correct: the classifier picked the right reason code
 - route_correct: the case went to the right specialist (or the fast lane)
 - vulnerability_flag_correct: the agent flagged vulnerability exactly when the label says so
 - high_risk_caught: (high-risk cases only) the case went to the fast lane. Missing one is the worst mistake.
+- recommendation_correct: the specialist recommended the right action (chargeback, refund or decline).
+  Not scored on fast-lane cases, where a human decides.
 
 Bump DATASET (v2, v3...) whenever data/complaints.jsonl changes, so LangSmith gets the new cases.
 """
@@ -16,9 +19,12 @@ import time
 from langsmith import Client, evaluate
 
 from utils import db
-from utils.nodes import classify_dispute, load_case, triage
+from utils.nodes import (classify_dispute, fraud_specialist, friendly_fraud_specialist, load_case,
+                         merchant_specialist, triage)
 
-DATASET = "friendly-fraudsters-disputes-v2"
+SPECIALISTS = {"fraud": fraud_specialist, "merchant": merchant_specialist, "friendly_fraud": friendly_fraud_specialist}
+
+DATASET = "friendly-fraudsters-disputes-v3"
 
 
 def ensure_dataset(client: Client):
@@ -30,12 +36,13 @@ def ensure_dataset(client: Client):
         dataset_id=ds.id,
         inputs=[{"complaint_id": r["complaint_id"], "text": r["text"]} for r in rows],
         outputs=[{"reason_code": r["expected_reason_code"], "route": r["expected_route"],
-                  "vulnerability_level": r["expected_vulnerability"]["level"]} for r in rows],
+                  "vulnerability_level": r["expected_vulnerability"]["level"],
+                  "recommendation": r["expected_recommendation"]} for r in rows],
     )
 
 
 def target(inputs: dict) -> dict:
-    """Run the graph up to triage (no specialists or human step), so evals are quick and cheap."""
+    """Run the graph up to the specialist (no evidence pack, review, human or letter), so evals are quick and cheap."""
     start = time.perf_counter()
     state = {"complaint_id": inputs["complaint_id"]}
     state |= load_case(state)
@@ -47,7 +54,11 @@ def target(inputs: dict) -> dict:
     route = state.get("route")
     if level == "high":
         route = "fast_lane"
-    return {"reason_code": state["reason_code"], "route": route, "vulnerable": flagged,
+    recommendation = None
+    if route in SPECIALISTS:
+        state |= SPECIALISTS[route](state)
+        recommendation = state.get("recommendation")
+    return {"reason_code": state["reason_code"], "route": route, "vulnerable": flagged, "recommendation": recommendation,
             "vulnerability_level": level or ("flagged" if flagged else "none"),
             "seconds": round(time.perf_counter() - start, 2)}
 
@@ -70,10 +81,17 @@ def high_risk_caught(outputs: dict, reference_outputs: dict):
     return {"key": "high_risk_caught", "score": outputs["route"] == "fast_lane"}
 
 
+def recommendation_correct(outputs: dict, reference_outputs: dict):
+    if reference_outputs.get("recommendation") is None:
+        return {"key": "recommendation_correct", "score": None, "comment": "fast-lane case: a human decides"}
+    return {"key": "recommendation_correct", "score": outputs["recommendation"] == reference_outputs["recommendation"]}
+
+
 if __name__ == "__main__":
     ensure_dataset(Client())
     results = evaluate(target, data=DATASET, experiment_prefix="disputes-baseline",
-                       evaluators=[reason_code_correct, route_correct, vulnerability_flag_correct, high_risk_caught])
+                       evaluators=[reason_code_correct, route_correct, vulnerability_flag_correct, high_risk_caught,
+                                           recommendation_correct])
 
     # Plain summary for the notebook and slides.
     totals, seconds, misses = {}, [], []
@@ -87,7 +105,8 @@ if __name__ == "__main__":
             totals[e.key] = (ok + int(bool(e.score)), n + 1)
             if not e.score:
                 misses.append(f"{r['example'].inputs['complaint_id']}: {e.key} failed. Agent said route={out.get('route')}, "
-                              f"reason={out.get('reason_code')}, vulnerable={out.get('vulnerable')}. Expected {ref}")
+                              f"reason={out.get('reason_code')}, vulnerable={out.get('vulnerable')}, "
+                              f"recommendation={out.get('recommendation')}. Expected {ref}")
     print("\nRESULTS")
     for key, (ok, n) in totals.items():
         print(f"  {key}: {ok}/{n}")
