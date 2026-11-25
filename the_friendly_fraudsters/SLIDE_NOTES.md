@@ -2,7 +2,7 @@
 
 Content for each slide of the LangChain **FSI Hackathon Submission Template**, in order. Save the deck as **`HACK_NATWEST_THEFRIENDLYFRAUDSTERS`**. Deadline: **15:45** (fork link and slides). Demo: 5 minutes plus Q&A at 16:00.
 
-Numbers are from the latest eval (12:40). Update them if the final eval changes anything. Every figure has a source, so we can answer "where's that from?" in Q&A.
+Numbers are from the final eval (14:15, all agents merged; same result on 2 runs). Every figure has a source, so we can answer "where's that from?" in Q&A.
 
 ---
 
@@ -35,7 +35,7 @@ Roles as on the final deck.
 
 - **Who:** the bank's disputes operations team, and customers waiting for their money back
 - **What:** every dispute is read, classified, investigated and written up by hand, and a letter is written; telling real fraud from "friendly fraud" (the customer's own or a family member's purchase) is slow and inconsistent
-- **Why now:** UK card-not-present fraud cases rose **22% to nearly 2.6 million** in 2024 (UK Finance). **48%** of consumers have mistakenly disputed a real purchase (Mastercard). The FCA's Consumer Duty requires good outcomes for vulnerable customers, within **8 weeks**
+- **Why now:** UK card-not-present fraud cases rose **13% to 3.2 million** in 2025 (UK Finance, June 2026). **49%** of UK adults show signs of vulnerability (FCA Financial Lives 2024). Also: **48%** of consumers have mistakenly disputed a real purchase (Mastercard). The FCA's Consumer Duty requires good outcomes for vulnerable customers, within **8 weeks**
 
 **Right-hand box (the concrete example):**
 > *"After everything this year I feel like there's no way out. Now £400 has gone to something called LuxeStay and I just can't face dealing with it."*
@@ -78,22 +78,26 @@ The customer never mentions self-harm. Our agent recognises crisis language and 
 | Vulnerable customers spotted correctly | 24 / 25 | **25 / 25** |
 | Dispute type (reason code) correct | 23 / 25 | **25 / 25** |
 | Sent to the right specialist | 21 / 25 | **25 / 25** |
-| Right action recommended | 19 / 23 | **22 / 23** |
+| Right action recommended | 19 / 23 | **23 / 23** |
 | Planted mistakes caught by the reviewer | n/a | **8 / 8** |
+| Letters passing every rule (8 scenarios, real agent) | n/a | **8 / 8** |
+| All 25 cases run end to end, through to the letter | n/a | **25 / 25, no errors** |
+| Evidence packs passing review first time | 12 / 23 | **22 / 23** |
+| Time per case, full graph | n/a | median 17 s (slowest 25 s) |
 
-Small note under the table: *25 hand-labelled synthetic cases, including traps: vague complaints, mixed problems, lookalikes, and anger that isn't vulnerability. Investigation takes about 5 s per case; about 25 s end to end including the evidence pack, review and letter.*
+Small note under the table: *25 hand-labelled synthetic cases, including traps: vague complaints, mixed problems, lookalikes, and anger that isn't vulnerability. Investigation takes about 5 s per case; the full graph (evidence pack, review and letter) has a median of 17 s.*
 
 **Right box:** screenshot of the LangSmith experiment comparison (Datasets & Experiments → `friendly-fraudsters-disputes-v3`), baseline vs latest.
 
-**If asked about the one miss (CMP-015):** "I thought I'd stopped that." The customer isn't sure they cancelled, so declining is defensible; we labelled it a chargeback.
+**If asked "is 100% realistic?":** it's 25 synthetic cases we designed, including traps. It shows the agent handles every situation we tested, not that it's perfect in production, and every case still goes to a human.
 
 ## Slide 8: Business value and what's next (optional)
 
-- **Business value:** about **£2M a year** saved on card-not-present fraud disputes alone: 2.6M UK cases (UK Finance) × NatWest's 16.5% current-account share (NatWest Group) × about £7.70 per dispute (Mastercard, US benchmark) × 60% of handling effort removed (**our assumption**: a human still approves every case). Plus faster answers, consistent vulnerable-customer care and no missed 8-week deadlines. Merchant disputes and friendly fraud aren't counted, so the real figure is likely higher.
+- **Business value:** about **£2.4M a year** saved on card-not-present fraud disputes alone: 3.2M UK cases in 2025 (UK Finance) × NatWest's 16.5% current-account share (NatWest Group) × about £7.70 per dispute (Mastercard, US benchmark) × 60% of handling effort removed (**our assumption**: a human still approves every case). Plus faster answers, consistent vulnerable-customer care and no missed 8-week deadlines. Merchant disputes and friendly fraud aren't counted, so the real figure is likely higher.
 - **Next step:**
   - A bigger, harder test set with real-world volumes
   - A "request more information" outcome instead of declining
-  - Real per-customer memory with LangGraph's memory store
+  - Tracking the FCA 8-week deadline on every open case
   - An LLM judge for letter tone, online evals and a human annotation queue in LangSmith
   - Tracking the FCA 8-week deadline on every open case
 
@@ -105,20 +109,30 @@ Small note under the table: *25 hand-labelled synthetic cases, including traps: 
 
 ## Live demo script (about 2 minutes, LangSmith Studio)
 
-Before the demo: `cd the_friendly_fraudsters && uv run langgraph dev`
+Before the demo: `cd the_friendly_fraudsters && uv run langgraph dev`. Start case 004 while you talk, because it takes about 35 seconds.
 
-1. **CMP-003, the sofa** (vulnerable, normal flow). Input `{"complaint_id": "CMP-003"}`. Show: vulnerability = medium → merchant specialist → evidence pack → quality review → **pause for a human**. Resume with `{"decision": "approve", "notes": "ok"}`, then show the gentle letter with the support line.
-2. **CMP-025, the subtle crisis.** Show it going straight to a human: the fast lane.
-3. Optional: **CMP-019, the lookalike.** Real fraud that looks like friendly fraud, correctly routed to the fraud specialist.
+1. **CMP-004: Tom, "This PixelGames charge isn't me"** (friendly fraud, about 75 seconds). Input `{"complaint_id": "CMP-004"}`. Show:
+   - vulnerability check → **none**
+   - triage → **friendly fraud**, with its three reasons: an earlier purchase at the shop, his own device + 3-D Secure, 2 lost fraud claims
+   - friendly-fraud specialist → **decline**
+   - quality reviewer **fails the first pack → rewrite → passes** (agents checking each other)
+   - **pause for a human:** the approval screen shows memory, *"This customer has lost 2 earlier fraud claims"*
+   - resume with `{"decision": "approve", "notes": "ok"}`, then the letter: a gentle decline, **"This doesn't mean we think you've done anything wrong"**, Financial Ombudsman, 14 days to send more information
+2. **CMP-011: Jordan, "I can't cope with any of this anymore"** (crisis, about 30 seconds). Input `{"complaint_id": "CMP-011"}`. Show:
+   - vulnerability check → **HIGH** → straight to a human (**fast lane**; the investigation is skipped, 2 seconds vs 35)
+   - the holding letter, written **without AI**: a person will call within 24 hours, **Samaritans 116 123**, 999 if in danger
+3. **Close on slide 7** (the scores).
 
-**Backup:** if the live run is slow or fails, open `dispute_agent.ipynb` section 4, which has the full sofa run with outputs saved.
+**Known quirk:** on CMP-011's approval screen, the `vulnerable_customer` field shows `None`; the vulnerability level itself is high. Ask Pradeep or Wasiu to fix it, or don't zoom in on that field.
+
+**Backup:** if Studio is slow or fails, open `dispute_agent.ipynb` section 4 (full sofa run with outputs saved).
 
 ## Likely Q&A
 
 - **"Is the ROI real?"** Volumes and costs are public (UK Finance, NatWest, Mastercard). The 60% is our assumption and is labelled as such. We counted one fraud type only.
 - **"Why not let the AI decide?"** A wrong decline harms customers and breaks Consumer Duty. The saving comes from faster investigation, not removing people.
 - **"How do you know it works?"** 25 labelled cases including deliberate traps, scored in LangSmith before and after every change, plus 8 planted-mistake packs for the reviewer.
-- **"Do scores vary?"** Slightly, because the AI isn't perfectly consistent. We ran the eval several times and report what we saw.
+- **"Do scores vary?"** Earlier versions moved by ±1 between runs; the final version scored the same on two runs.
 - **"Is this real data?"** No, all synthetic, as the rules require.
 
 ## Sources
