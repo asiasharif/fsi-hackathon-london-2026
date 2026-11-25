@@ -1,11 +1,14 @@
 """Nodes for the card dispute graph.
 
-Flow: load_case -> classify_dispute -> triage -> [fraud | merchant | friendly_fraud] specialist
+Flow: load_case -> vulnerability_check -+-> high risk: FAST LANE straight to human_approval
+                                        +-> classify_dispute -> triage -> [fraud | merchant | friendly_fraud] specialist
       -> draft_evidence_pack <-> quality_review (max 2 rewrites) -> human_approval -> write_customer_letter -> finalise
 
 write_customer_letter lives in utils/customer_letter.py.
 """
 
+import re
+from datetime import date, timedelta
 from typing import Literal
 
 from langchain.chat_models import init_chat_model
@@ -15,7 +18,7 @@ from pydantic import BaseModel, Field
 from tools.cases import get_complaint, get_customer, get_dispute_history, get_merchant_history, get_transaction
 from tools.memory import record_dispute
 from utils.models import model
-from utils.state import FRAUD_CODES, MyAgentState, ReasonCode, SendBackTo
+from utils.state import FRAUD_CODES, MyAgentState, ReasonCode, SendBackTo, VulnerabilityLevel, VulnerabilityType
 
 
 def llm():
@@ -33,6 +36,91 @@ def load_case(state: MyAgentState) -> dict:
         "merchant_history": get_merchant_history(complaint["customer_id"], tx.get("merchant", ""), tx.get("transaction_id", "")),
         "dispute_history": get_dispute_history(complaint["customer_id"]),
     }
+
+
+# ---------------------------------------------------------------- 1b. vulnerability check (AI + rules)
+LEVELS = ["none", "low", "medium", "high"]
+
+# Safety net: any of these phrases means high risk, whatever the AI says. Missing a high-risk customer is the worst
+# mistake the agent can make, so the rules can only raise the level, never lower it.
+CRISIS_PATTERNS = [
+    r"can'?t cope", r"cannot cope", r"no way out", r"(don'?t|do not) see the point", r"no point in (anything|living)",
+    r"end it all", r"kill myself", r"suicid", r"self[- ]harm", r"hurt myself", r"not worth living",
+    r"better off without me", r"(can'?t|cannot) go on",
+]
+RECENT_DISPUTES_DAYS, RECENT_DISPUTES_LIMIT = 90, 3  # many disputes in a short time is a vulnerability signal
+
+
+class VulnerabilityAssessment(BaseModel):
+    level: VulnerabilityLevel = Field(description="none, low, medium or high (see the guide)")
+    types: list[VulnerabilityType] = Field(description="FCA drivers of vulnerability that apply. Empty if none.")
+    reasons: list[str] = Field(description="Short quotes or facts that justify the level. Empty if none.")
+
+
+def vulnerability_rules(case: dict) -> tuple[str, list[str], list[str]]:
+    """Deterministic signals: crisis phrases, the customer's profile and recent dispute history."""
+    text = case["complaint"]["text"].lower()
+    level, types, reasons = "none", [], []
+    crisis = [p for p in CRISIS_PATTERNS if re.search(p, text)]
+    if crisis:
+        level, types = "high", ["health"]
+        reasons.append("Crisis language in the complaint (rule)")
+    if case["customer"].get("vulnerable"):
+        level = max(level, "low", key=LEVELS.index)
+        reasons.append("Customer is already marked vulnerable on their profile")
+    cutoff = (date.today() - timedelta(days=RECENT_DISPUTES_DAYS)).isoformat()
+    recent = [d for d in case["dispute_history"] if d.get("opened", "") >= cutoff]
+    if len(recent) >= RECENT_DISPUTES_LIMIT:
+        level = max(level, "low", key=LEVELS.index)
+        reasons.append(f"{len(recent)} disputes in the last {RECENT_DISPUTES_DAYS} days")
+    return level, types, reasons
+
+
+def vulnerability_check(state: MyAgentState) -> dict:
+    prompt = f"""You check whether a UK bank customer raising a card dispute may be vulnerable, following the FCA's
+guidance on the fair treatment of vulnerable customers (Consumer Duty).
+
+Types (FCA drivers): health (physical or mental illness, distress), life_event (bereavement, new baby, moving house,
+job loss, relationship breakdown), low_resilience (struggling with money, can't afford the loss),
+low_capability (age, confusion about payments or technology, being scammed, poor English).
+
+Level guide:
+- high: crisis. Hopelessness, can't cope, self-harm or suicidal thoughts, severe distress. Needs a human now.
+- medium: clear, serious vulnerability, e.g. "I'm really struggling", elderly and confused, scam victim.
+- low: a milder signal, e.g. "money's a bit tight", just moved house, new baby and no sleep.
+- none: no signal. Anger or frustration alone ("I'm furious!", "sort this out") is NOT vulnerability.
+  Disputing a payment is NOT vulnerability either: "wasn't me", "someone used my card", "I don't recognise this
+  payment" or "I don't understand this charge" are normal dispute wording. Being tricked by a scammer (e.g. a caller
+  pretending to fix their computer) IS vulnerability (low_capability). Only flag what the customer says about
+  themselves or their situation.
+
+Complaint: {state["complaint"]["text"]}
+Customer profile: {state["customer"]}
+Number of past disputes: {len(state["dispute_history"])}"""
+    ai = llm().with_structured_output(VulnerabilityAssessment, method="json_schema").invoke(prompt)
+    rule_level, rule_types, rule_reasons = vulnerability_rules(state)
+    level = max(ai.level, rule_level, key=LEVELS.index)
+    vulnerability = {
+        "vulnerable": level != "none",
+        "level": level,
+        "types": list(dict.fromkeys(ai.types + rule_types)),
+        "reasons": ai.reasons + rule_reasons,
+    }
+    update = {"vulnerability": vulnerability}
+    if level == "high":
+        update |= {"route": "fast_lane", "route_reasons": ["High-risk vulnerable customer: fast lane to a human"]}
+    return update
+
+
+def route_after_vulnerability(state: MyAgentState) -> Literal["classify_dispute", "human_approval"]:
+    return "human_approval" if state["vulnerability"]["level"] == "high" else "classify_dispute"
+
+
+def _vulnerability_text(state: MyAgentState) -> str:
+    v = state.get("vulnerability") or {}
+    if not v.get("vulnerable"):
+        return "None found"
+    return f"{v['level']} ({', '.join(v['types']) or 'unspecified'}): {'; '.join(v['reasons'])}"
 
 
 # ---------------------------------------------------------------- 2. classify (owner: graph; scored by evals)
@@ -89,8 +177,9 @@ Transaction: {state["transaction"]}
 Earlier purchases at this merchant: {state["merchant_history"] or "None"}
 Customer's past disputes: {state["dispute_history"] or "None"}
 Triage signals: {state["route_reasons"]}
+Customer vulnerability: {_vulnerability_text(state)}
 
-Assess the claim and recommend an action. Use only the facts above.{_review_feedback_for(state, "specialist")}"""
+Vulnerability changes how carefully we treat the customer, not whether they are right. Assess the claim and recommend an action. Use only the facts above.{_review_feedback_for(state, "specialist")}"""
     return llm().with_structured_output(Assessment, method="json_schema").invoke(prompt).model_dump()
 
 
@@ -130,7 +219,8 @@ Transaction: {state["transaction"]}
 Route: {state["route"]} ({state["route_reasons"]})
 Specialist assessment: {state["assessment"]}
 Recommendation: {state["recommendation"]}
-Vulnerability signals: {state["vulnerable_signals"] or "None"}
+Vulnerability check: {_vulnerability_text(state)}
+Classifier's vulnerability signals: {state["vulnerable_signals"] or "None"}
 
 Use only these facts."""
     return {"evidence_pack": llm().invoke(prompt).content}
@@ -224,10 +314,26 @@ def _review_feedback_for(state: MyAgentState, step: str) -> str:
 
 # ---------------------------------------------------------------- 6. human approval + memory (owner: memory/HITL)
 def human_approval(state: MyAgentState) -> dict:
+    vulnerability = state.get("vulnerability") or {}
+    if state.get("route") == "fast_lane":
+        tx = state["transaction"]
+        answer = interrupt({
+            "FAST_LANE": "High-risk vulnerable customer. Contact them now; the investigation is on hold.",
+            "vulnerability": vulnerability,
+            "complaint_id": state["complaint_id"],
+            "customer": state["customer"].get("name"),
+            "summary": f"Disputes {tx.get('currency', '')} {tx.get('amount')} to {tx.get('merchant')} on "
+                       f"{tx.get('timestamp', '')}. Customer wrote: \"{state['complaint']['text']}\"",
+            "question": "Reply with {'decision': 'contacted' | 'escalated', 'notes': ...}",
+        })
+        return {"decision": answer["decision"], "reviewer_notes": answer.get("notes", "")}
+
     answer = interrupt({
+        "vulnerability": vulnerability,
         "complaint_id": state["complaint_id"],
         "recommendation": state["recommendation"],
-        "vulnerable_customer": bool(state["vulnerable_signals"] or state["customer"].get("vulnerable")),
+        "vulnerable_customer": bool(vulnerability.get("vulnerable") or state["vulnerable_signals"]
+                                    or state["customer"].get("vulnerable")),
         "evidence_pack": state["evidence_pack"],
         "quality_review": {
             "result": state.get("review_result"),
@@ -244,8 +350,8 @@ def finalise(state: MyAgentState) -> dict:
         customer_id=state["complaint"]["customer_id"],
         transaction_id=state["transaction"]["transaction_id"],
         merchant=state["transaction"]["merchant"],
-        reason_code=state["reason_code"],
+        reason_code=state.get("reason_code", "unclassified"),  # the fast lane skips classification
         outcome="pending",
-        notes=f"{state['recommendation']} ({state['decision']}). {state['reviewer_notes']}".strip(),
+        notes=f"{state.get('recommendation', 'fast_lane')} ({state['decision']}). {state['reviewer_notes']}".strip(),
     )
     return {}

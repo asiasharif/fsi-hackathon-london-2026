@@ -18,6 +18,8 @@ class FakeModel:
 
     def invoke(self, prompt):
         name = self.schema.__name__ if self.schema else None
+        if name == "VulnerabilityAssessment":
+            return nodes.VulnerabilityAssessment(level="none", types=[], reasons=[])
         if name == "Classification":
             return nodes.Classification(reason_code="fraud_card_not_present", vulnerable_signals=[])
         if name == "Assessment":

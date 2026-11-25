@@ -16,7 +16,7 @@ import time
 from langsmith import Client, evaluate
 
 from utils import db
-from utils.nodes import classify_dispute, load_case, triage
+from utils.nodes import classify_dispute, load_case, triage, vulnerability_check
 
 DATASET = "friendly-fraudsters-disputes-v2"
 
@@ -39,9 +39,9 @@ def target(inputs: dict) -> dict:
     start = time.perf_counter()
     state = {"complaint_id": inputs["complaint_id"]}
     state |= load_case(state)
-    state |= classify_dispute(state)
+    state |= vulnerability_check(state)
+    state |= classify_dispute(state)  # still scored for high-risk cases, even though the graph skips it for them
     state |= triage(state)
-    # Until the vulnerability_check step exists, read what the classifier flagged.
     level = state.get("vulnerability", {}).get("level")
     flagged = (level not in (None, "none")) if level else bool(state.get("vulnerable_signals"))
     route = state.get("route")

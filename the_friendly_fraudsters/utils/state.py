@@ -15,7 +15,17 @@ ReasonCode = Literal[
 ]
 FRAUD_CODES = {"fraud_card_not_present", "fraud_card_present"}
 
-Route = Literal["fraud", "merchant", "friendly_fraud"]
+Route = Literal["fraud", "merchant", "friendly_fraud", "fast_lane"]  # fast_lane: high-risk customer, straight to a human
+
+VulnerabilityLevel = Literal["none", "low", "medium", "high"]
+VulnerabilityType = Literal["health", "life_event", "low_resilience", "low_capability"]
+
+
+class Vulnerability(TypedDict):
+    vulnerable: bool
+    level: VulnerabilityLevel
+    types: list[VulnerabilityType]
+    reasons: list[str]
 
 # where quality_review sends a case: write-up problems -> draft_evidence_pack, bad reasoning -> specialist,
 # wrong reason code -> classify_dispute, passed or unfixable -> human_approval
@@ -37,6 +47,8 @@ class MyAgentState(MyAgentInput):
     transaction: dict
     merchant_history: list[dict]
     dispute_history: list[dict]
+    # set by vulnerability_check (high level -> route "fast_lane", straight to human_approval)
+    vulnerability: Vulnerability
     # set by classify_dispute
     reason_code: ReasonCode
     vulnerable_signals: list[str]
