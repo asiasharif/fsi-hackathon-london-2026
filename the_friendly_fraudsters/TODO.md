@@ -99,10 +99,10 @@ Branch: `data-evals`
 
 - [x] Customer letter agent (`utils/customer_letter.py`, step `write_customer_letter`): letter type from the outcome, Ombudsman on declines, never accusing, gentler for vulnerable customers, fast-lane holding message without the AI
 - [x] 63 tests built on the letter test set; the sofa letter passes every rule with the real agent
-- [ ] **Test runs pollute the data:** every full run adds a record to `data/dispute_history.jsonl`, which changes later results. Ideally save test runs elsewhere, or use LangGraph's memory store
-- [ ] Memory visible on repeat disputes ("this customer has lost 2 earlier fraud claims")
+- [x] **Test runs no longer pollute the data:** outcomes are saved in LangGraph's memory store (`tools/memory.py`), not `data/dispute_history.jsonl`; tests and evals save nothing
+- [x] Memory visible on repeat disputes: the approval screen shows "This customer has lost 2 earlier fraud claims (...)" and earlier cases handled by the agent
 - [ ] ~~Slides~~: **moved to Asia** (content in `SLIDE_NOTES.md`): problem and who it helps → how it works → live demo → results (scoreboard, ROI) → how we built it. Name: `HACK_NATWEST_THEFRIENDLYFRAUDSTERS`
-- [ ] Demo script with 2–3 cases in LangSmith Studio: CMP-003 (sofa, vulnerable, review loop), CMP-004 (friendly-fraud decline), CMP-011 or 025 (crisis fast lane)
+- [x] Demo runbook in `DEMO.md` (step by step in LangSmith Studio): CMP-003 (sofa, vulnerable, review loop), CMP-004 (friendly-fraud decline, memory), CMP-011 (crisis fast lane)
 - [ ] Rehearse to under 5 minutes
 
 ## Mariam: Task 3, specialists and evidence pack
