@@ -13,13 +13,13 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 | **15:45** | **Submission deadline:** fork link and slides |
 | 16:00 | Demos: 5 minutes plus Q&A |
 
-## Status at a glance (updated 12:15)
+## Status at a glance (updated 12:40)
 
 | Person | Done | Pending |
 | --- | --- | --- |
-| **Asia** (data and evals) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–5 and 7, sourced ROI | Final eval after Mariam's and Pradeep's fixes, notebook sections 6 and 8, slide numbers for Wasiu |
-| **Pradeep** (reviewer, then graph) | Quality reviewer (**8/8 on the test packs**), review loop, vulnerability check + **fast lane** (crisis cases 2/2), approval screen shows vulnerability, triage "undisputed" fix | **CMP-019 trap**, classifier on mixed problems (CMP-016, 018) |
-| **Wasiu** (letters, then demo) | Customer letter agent with fast-lane holding message, 63 passing tests, sofa letter passes every rule | Test runs pollute `dispute_history.jsonl`, memory visible on repeat disputes, **slides and demo script** |
+| **Asia** (data, evals and **slides**) | 25 labelled cases, 2 test sets, data checker, eval with 5 scores, notebook sections 1–5 and 7, sourced ROI | Final eval after Mariam's and Pradeep's fixes, notebook sections 6 and 8, slide numbers for Wasiu |
+| **Pradeep** (reviewer, then graph) | Quality reviewer (**8/8 on the test packs**), review loop, vulnerability check + **fast lane** (crisis cases 2/2), approval screen shows vulnerability, triage fixes incl. **CMP-019 trap**, classifier reason-code definitions (route and reason code now **25/25**) | Keep `main` running; merge teammates' work |
+| **Wasiu** (letters, then demo) | Customer letter agent with fast-lane holding message, 63 passing tests, sofa letter passes every rule | Test runs pollute `dispute_history.jsonl`, memory visible on repeat disputes, demo script and rehearsal |
 | **Mariam** (specialists) | Started | **Everything in Task 3.** Biggest win: merchant specialist (CMP-002, 014, 015, 016). No branch on GitHub yet: please push |
 
 ## Scoreboard (25 cases, LangSmith dataset `friendly-fraudsters-disputes-v3`)
@@ -28,11 +28,11 @@ FSI Hackathon London, 25 Nov 2026. Tick items off (`[x]`) as you finish them and
 | --- | --- | --- | --- |
 | **Crisis cases sent straight to a human** | 0 / 2 | **2 / 2** | Done |
 | Vulnerability spotted correctly | 24 / 25 | **25 / 25** | Done |
-| Route correct | 21 / 25 | 23 / 25 | Pradeep (CMP-018, 019) |
-| Reason code correct | 23 / 25 | 23 / 25 | Pradeep (CMP-016, 018) |
-| Recommendation correct (fast-lane excluded) | 19 / 23 | 19–20 / 23 | **Mariam** (CMP-002, 014, 015, 016) |
+| Route correct | 21 / 25 | **25 / 25** | Done |
+| Reason code correct | 23 / 25 | **25 / 25** | Done |
+| Recommendation correct (fast-lane excluded) | 19 / 23 | **22 / 23** | Mariam (CMP-015 left) |
 | Quality reviewer on the 8 test packs | n/a | **8 / 8** | Done |
-| Median time per case (investigation steps) | 3.6 s | 5.0 s | |
+| Median time per case (investigation steps) | 3.6 s | 4.8 s | |
 
 Scores move by ±1 between runs because the AI isn't perfectly consistent, so we run the final eval twice. Run it yourself: `uv run python -m evals.run_evals`
 
@@ -76,11 +76,11 @@ Branch: `data-evals`
 | 7 | Scored Pradeep's reviewer (8/8) and the sofa letter (all rules pass) | Morning | Done |
 | 8 | Sourced ROI from UK Finance, FCA, NatWest and Mastercard public figures (about £2M a year, conservative) | Morning | Done |
 | 9 | Notebook sections 1–5 and 7, including the sofa case end to end with the review loop | Morning | Done |
-| 10 | Notebook sections 6 (final results table) and 8 (next steps) | Before lunch | To do |
-| 11 | Slide numbers and sources for Wasiu | Before lunch | To do |
+| 10 | Notebook sections 6 (results table) and 8 (next steps) | Before lunch | Done |
+| 11 | Slide notes: content per slide, demo script, Q&A answers, sources (`SLIDE_NOTES.md`) | Before lunch | Done |
 | 12 | Pull Mariam's and Pradeep's fixes; final eval, run twice | About 14:30 | To do |
 | 13 | Score all 8 letter cases with the real agent | About 14:30 | To do |
-| 14 | Final notebook numbers; hand them to Wasiu | About 15:15 | To do |
+| 14 | **Slides** from the LangChain template (`HACK_NATWEST_THEFRIENDLYFRAUDSTERS`) | About 15:15 | To do |
 | 15 | Final commit and push | Before 15:45 | To do |
 
 ## Pradeep: quality review agent, then Task 2, graph and routing
@@ -91,8 +91,8 @@ Branch: `data-evals`
 - [x] `vulnerability_check` after `load_case`, with the **high-risk fast lane** to a human (crisis cases now 2/2)
 - [x] Approval screen shows the vulnerability level
 - [x] Triage counts only undisputed earlier purchases; reviewer sees the agent's own findings
-- [ ] **CMP-019 trap (still failing):** real fraud routed to friendly fraud. An unknown device + failed 3-D Secure should block the friendly-fraud route
-- [ ] Classifier on mixed problems: CMP-016 ("I think they charged me twice", but the data shows one payment) and CMP-018 (4am foreign payment framed as a cancelled subscription). Weigh the payment data over the customer's wording
+- [x] **CMP-019 trap (fixed):** real fraud routed to friendly fraud. An unknown device + failed 3-D Secure should block the friendly-fraud route
+- [x] Classifier on mixed problems (fixed): CMP-016 ("I think they charged me twice", but the data shows one payment) and CMP-018 (4am foreign payment framed as a cancelled subscription). Weigh the payment data over the customer's wording
 - [ ] Keep `main` running end to end; merge teammates' pull requests
 
 ## Wasiu: customer letter agent, then Task 4, memory, approval and demo
@@ -101,7 +101,7 @@ Branch: `data-evals`
 - [x] 63 tests built on the letter test set; the sofa letter passes every rule with the real agent
 - [ ] **Test runs pollute the data:** every full run adds a record to `data/dispute_history.jsonl`, which changes later results. Ideally save test runs elsewhere, or use LangGraph's memory store
 - [ ] Memory visible on repeat disputes ("this customer has lost 2 earlier fraud claims")
-- [ ] **Slides** (5 minutes, LangChain template): problem and who it helps → how it works → live demo → results (scoreboard, ROI) → how we built it. Name: `HACK_NATWEST_THEFRIENDLYFRAUDSTERS`
+- [ ] ~~Slides~~: **moved to Asia** (content in `SLIDE_NOTES.md`): problem and who it helps → how it works → live demo → results (scoreboard, ROI) → how we built it. Name: `HACK_NATWEST_THEFRIENDLYFRAUDSTERS`
 - [ ] Demo script with 2–3 cases in LangSmith Studio: CMP-003 (sofa, vulnerable, review loop), CMP-004 (friendly-fraud decline), CMP-011 or 025 (crisis fast lane)
 - [ ] Rehearse to under 5 minutes
 
@@ -109,13 +109,13 @@ Branch: `data-evals`
 
 **Please push a branch soon, even unfinished, and pull `main` first.** Pradeep is also editing `utils/nodes.py`, so consider putting new prompts in `utils/specialists.py` to avoid merge conflicts.
 
-- [ ] **Merchant specialist (biggest win):** it declines merchant cases for lack of proof (CMP-002, 014, 015, 016). In a real chargeback the customer's credible account is enough to raise one; decline only when the evidence *contradicts* the customer
+- [ ] **Merchant specialist:** only CMP-015 is still declined ("I thought I'd stopped that"). In a real chargeback the customer's credible account is enough to raise one; decline only when the evidence *contradicts* the customer
 - [ ] **Fraud specialist:** country vs home, unknown device, failed 3-D Secure, odd hour
 - [ ] **Friendly-fraud specialist:** fair and careful, never accusing
 - [ ] Use the vulnerability level: consider refunding while investigating if the customer can't afford the loss
 - [ ] Evidence pack sections: Summary, Reason code, Transaction details, Evidence, Customer history, **Vulnerability**, Recommendation
 - [x] Reviewer feedback reaches the specialists and the evidence pack (wired by Pradeep)
-- [ ] Test: `uv run python -m evals.run_evals`. Target: recommendation **23 / 23**
+- [ ] Test: `uv run python -m evals.run_evals`. Recommendation is now **22 / 23**; target 23 / 23
 - [ ] Merge by about 14:30
 
 ---
@@ -131,9 +131,9 @@ The judges' proof that the agent works: they can open it on GitHub and see the o
 | 3. The dataset | Table of the 25 cases, data checks, both test sets | Done |
 | 4. One case end to end | The sofa case: vulnerability check, review loop, human pause, approval, letter | Done |
 | 5. Evals | Before and after table, every miss explained | Done (final numbers after the last eval) |
-| 6. Results table | Like the KYC example: correct out of 25, missed high-risk, false alarms, time per case | To do |
+| 6. Results | KYC-style results table, every miss explained | Done (final numbers after the last eval) |
 | 7. KPIs and ROI | Sourced figures and the £2M estimate | Done |
-| 8. Next steps | What we'd improve | To do |
+| 8. Next steps | What we'd build next | Done |
 
 ## KPIs and ROI
 
