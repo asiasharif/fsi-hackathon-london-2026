@@ -78,7 +78,7 @@ Branch: `data-evals`
 | 5 | Eval with 5 scores: reason code, route, vulnerability, high-risk caught, recommendation | Morning | Done |
 | 6 | Baseline and first "after" scores (see the scoreboard) | Morning | Done |
 | 7 | Scored Pradeep's reviewer (8/8) and the sofa letter (all rules pass) | Morning | Done |
-| 8 | Sourced ROI from UK Finance, FCA, NatWest and Mastercard public figures (about £2M a year, conservative) | Morning | Done |
+| 8 | Sourced ROI from UK Finance, FCA, NatWest and Mastercard public figures (about £2.4M a year with 2025 volumes, conservative) | Morning | Done |
 | 9 | Notebook sections 1–5 and 7, including the sofa case end to end with the review loop | Morning | Done |
 | 10 | Notebook sections 6 (results table) and 8 (next steps) | Before lunch | Done |
 | 11 | Slide notes: content per slide, demo script, Q&A answers, sources (`SLIDE_NOTES.md`) | Before lunch | Done |
@@ -137,7 +137,7 @@ The judges' proof that the agent works: they can open it on GitHub and see the o
 | 4. One case end to end | The sofa case: vulnerability check, review loop, human pause, approval, letter | Done |
 | 5. Evals | Before and after table, every miss explained | Done (final numbers after the last eval) |
 | 6. Results | KYC-style results table, every miss explained | Done (final numbers after the last eval) |
-| 7. KPIs and ROI | Sourced figures and the £2M estimate | Done |
+| 7. KPIs and ROI | Sourced figures and the £2.4M estimate | Done |
 | 8. Next steps | What we'd build next | Done |
 
 ## KPIs and ROI
@@ -194,13 +194,13 @@ Annual saving   = saving per case × cases per year
 
 | Step | Figure | Type |
 | --- | --- | --- |
-| UK card-not-present fraud cases a year | 2.6M | Sourced |
-| NatWest's share, if fraud is proportional to current-account share | 16.5% → about **430,000 cases a year** | Assumption (sourced share) |
+| UK card-not-present fraud cases, 2025 | 3.2M | Sourced (UK Finance 2026) |
+| NatWest's share, if fraud is proportional to current-account share | 16.5% → about **528,000 cases a year** | Assumption (sourced share) |
 | Cost per dispute | about **£7.70** | Sourced (US benchmark) |
 | Handling effort removed by the agent (a human still reviews every case) | **60%** | Assumption, team to agree |
 | AI cost per case | measured from LangSmith traces | Measured |
-| **Estimated saving** | 430,000 × £7.70 × 60% ≈ **£2M a year**, minus AI cost | |
+| **Estimated saving** | 528,000 × £7.70 × 60% ≈ **£2.4M a year**, minus AI cost | |
 
-Caveats to say out loud: the cost figure is a US benchmark; merchant disputes and friendly fraud are **not** counted, so the real figure is likely higher; UK Finance published 2025 figures on 25 Nov 2026 that we have not yet checked. Beyond money: faster answers, consistent vulnerable-customer care, and no missed 8-week deadlines.
+Caveats to say out loud: the cost figure is a US benchmark; merchant disputes and friendly fraud are **not** counted, so the real figure is likely higher; Case volumes use UK Finance's 2025 figures (published 15 June 2026). Beyond money: faster answers, consistent vulnerable-customer care, and no missed 8-week deadlines.
 
 Label every assumption clearly on the slide. The saving comes from **faster investigation, not removing the human**: that's honest, and a good answer for Q&A.
