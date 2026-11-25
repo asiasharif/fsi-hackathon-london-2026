@@ -401,13 +401,16 @@ Customer: {state["customer"]}
 Complaint: {state["complaint"]["text"]}
 Reason code: {state["reason_code"]}
 Transaction: {state["transaction"]}
+Earlier purchases at this merchant: {state["merchant_history"] or "None"}
+Customer's past disputes: {state["dispute_history"] or "None"}
 Route: {state["route"]} ({state["route_reasons"]})
 Specialist assessment: {state["assessment"]}
 Recommendation: {state["recommendation"]}
 Vulnerability check: {_vulnerability_text(state)}
 Classifier's vulnerability signals: {state["vulnerable_signals"] or "None"}
 
-Use only these facts."""
+Use only these facts. Quote the details you are given (IDs, dates, amounts, device, 3-D Secure, dispute notes)
+instead of saying they were not provided, and present the recommendation as the specialist made it."""
     return {"evidence_pack": llm().invoke(prompt).content}
 
 
@@ -430,13 +433,15 @@ before a member of staff uses it to approve or override the recommendation. Judg
 Checklist (the pack fails if ANY item fails):
 1. Grounded: every fact (amounts, dates, merchant, device, 3-D Secure, history) matches the source data.
 2. Nothing invented: no evidence, events, confirmations or documents that are not in the source data.
-3. Reason code fits: the reason code matches what the customer actually complains about.
+3. Reason code fits: fail only if the code is clearly wrong for the complaint (e.g. fraud for a cancelled
+   subscription). A vague complaint where the code is a reasonable reading is NOT a failure.
 4. Recommendation matches the evidence: e.g. a "not me" claim with several signs that the customer made the payment
    (earlier purchases there, known device + 3-D Secure, lost fraud claims) should not be a chargeback.
 5. Complete: it has Summary, Reason code, Transaction details, Evidence, Customer history, Vulnerability and
    Recommendation sections, each with real content.
 6. Vulnerability handled: if the complaint or profile shows vulnerability (age, illness, distress, hardship, scam,
    confusion), the Vulnerability section says so and the case is handled with care, not marked "none".
+   Anger, frustration or complaining again ("this is a joke", "third time I've written") alone is NOT vulnerability.
 7. No accusing tone: never says or implies the customer is lying; friendly fraud is often a household member.
 8. Decision-ready: a human could approve or override from this pack alone.
 Only fail a pack for problems that could mislead the human or harm the customer. These are NOT failures:
