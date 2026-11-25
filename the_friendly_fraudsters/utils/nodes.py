@@ -8,7 +8,7 @@ write_customer_letter lives in utils/customer_letter.py.
 """
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal
 
 from langchain.chat_models import init_chat_model
@@ -192,39 +192,195 @@ def route_to_specialist(state: MyAgentState) -> Literal["fraud_specialist", "mer
 
 
 # ---------------------------------------------------------------- 4. specialists (owner: specialists)
+#
+# Each specialist gets:
+#   - a list of FACTS worked out in plain Python first (country, device, 3-D Secure, duplicates...), so the
+#     LLM reasons over checked facts instead of spotting them itself
+#   - its own INSTRUCTIONS (what to look for, and when to pick each recommendation)
+#   - a VULNERABILITY note, so a customer who may not cope with the loss is handled with care
+
+
 class Assessment(BaseModel):
     assessment: str = Field(description="3-5 sentences of reasoning, citing the evidence")
     recommendation: Literal["file_chargeback", "refund_customer", "decline_claim"]
 
 
-def _specialist(state: MyAgentState, role: str) -> dict:
-    prompt = f"""You are a {role} at a UK bank's card disputes team.
+def _when(timestamp: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(timestamp)
+    except (TypeError, ValueError):
+        return None
+
+
+def _vulnerability_note(state: MyAgentState) -> str:
+    """The vulnerability check's result (see vulnerability_check), plus anything the classifier noticed."""
+    note = _vulnerability_text(state)
+    if state.get("vulnerable_signals"):
+        note += f". The classifier also noticed: {'; '.join(state['vulnerable_signals'])}"
+    if note == "None found":
+        return "None found."
+    return (
+        note + ".\n"
+        "Vulnerability changes how carefully we treat the customer, not whether they are right: base the "
+        "recommendation on the evidence. But if they may not be able to afford the loss, say in your assessment "
+        "that the bank should consider refunding them while the case is investigated, and keep the wording gentle."
+    )
+
+
+def _undisputed_purchases(state: MyAgentState) -> list[dict]:
+    """Earlier purchases at this merchant that the customer never disputed (same rule as triage)."""
+    disputed = {d.get("transaction_id") for d in state["dispute_history"]}
+    return [t for t in state["merchant_history"] if t["transaction_id"] not in disputed]
+
+
+def fraud_signals(state: MyAgentState) -> list[str]:
+    """Signs that someone other than the customer made the payment (true fraud)."""
+    tx, customer = state["transaction"], state["customer"]
+    signs = []
+    if tx.get("country") and customer.get("home_country") and tx["country"] != customer["home_country"]:
+        signs.append(f"Made in {tx['country']}, but the customer lives in {customer['home_country']}")
+    if tx.get("device_known") is False:
+        signs.append("Made on a device the customer has not used before")
+    if tx.get("3ds_passed") is False:
+        signs.append("Failed the bank's 3-D Secure security check")
+    when = _when(tx.get("timestamp"))
+    if when and when.hour < 5:
+        signs.append(f"Made at {when:%H:%M}, an unusual time")
+    if not _undisputed_purchases(state):
+        signs.append(f"No earlier undisputed purchases by this customer at {tx.get('merchant', 'this merchant')}")
+    return signs
+
+
+def customer_made_it_signals(state: MyAgentState) -> list[str]:
+    """Signs that the customer (or someone in their household) made the payment."""
+    tx = state["transaction"]
+    signs = []
+    if tx.get("device_known") and tx.get("3ds_passed"):
+        signs.append("Made on the customer's own device and passed 3-D Secure")
+    undisputed = _undisputed_purchases(state)
+    if undisputed:
+        signs.append(f"{len(undisputed)} earlier undisputed purchase(s) at {tx.get('merchant')}")
+    return signs
+
+
+def merchant_checks(state: MyAgentState) -> list[str]:
+    """Facts about the payment that help judge a dispute with the shop."""
+    tx = state["transaction"]
+    checks = []
+    when = _when(tx.get("timestamp"))
+    same_amount = [t for t in state["merchant_history"] if abs(t.get("amount", 0) - tx.get("amount", 0)) < 0.01]
+    for t in same_amount:
+        other = _when(t.get("timestamp"))
+        if when and other and abs((when - other).days) <= 3:
+            checks.append(f"Possible duplicate: the same amount (£{tx['amount']:.2f}) was charged by {tx['merchant']} "
+                          f"on {other:%d %b %Y at %H:%M}")
+        elif other:
+            checks.append(f"The same amount was also charged on {other:%d %b %Y}: this is a repeat (subscription-style) "
+                          "payment, which fits a complaint about being charged after cancelling")
+    says_twice = state.get("reason_code") == "duplicate_charge" or "twice" in state["complaint"]["text"].lower()
+    if says_twice and not any("Possible duplicate" in c for c in checks):
+        checks.append(f"The customer mentions being charged twice, but there is only one payment of this amount to "
+                      f"{tx.get('merchant')} in the data, so a duplicate is not supported. Judge the claim on the "
+                      "customer's other problem")
+    if state["merchant_history"]:
+        checks.append(f"{len(state['merchant_history'])} earlier payment(s) to {tx['merchant']} in the data")
+    else:
+        checks.append(f"No earlier payments to {tx.get('merchant')} in the data")
+    if tx.get("device_known") and tx.get("3ds_passed"):
+        checks.append("The customer made this payment themselves (own device, passed 3-D Secure), "
+                      "so this is a dispute with the shop, not fraud")
+    checks.append("The bank has no delivery, cancellation or usage records at this stage. That is normal and is NOT "
+                  "a reason to decline: the merchant answers the chargeback with its own evidence")
+    return checks
+
+
+def _specialist(state: MyAgentState, role: str, instructions: str, facts_title: str, facts: list[str]) -> dict:
+    facts_text = "\n".join(f"- {f}" for f in facts) or "- None found"
+    prompt = f"""You are a {role} in a UK bank's card disputes team.
+
+{instructions}
 
 Complaint: {state["complaint"]["text"]}
 Reason code: {state["reason_code"]}
 Transaction: {state["transaction"]}
+Customer: {state["customer"]}
 Earlier purchases at this merchant: {state["merchant_history"] or "None"}
 Customer's past disputes: {state["dispute_history"] or "None"}
 Triage signals: {state["route_reasons"]}
-Customer vulnerability: {_vulnerability_text(state)}
 
-Vulnerability changes how carefully we treat the customer, not whether they are right. Assess the claim and recommend an action. Use only the facts above.{_review_feedback_for(state, "specialist")}"""
+{facts_title} (worked out from the data, so you can rely on them):
+{facts_text}
+
+Vulnerability: {_vulnerability_note(state)}
+
+Write 3-5 sentences that cite the specific evidence above, then choose one recommendation.
+Write for the bank's staff, about the customer in the third person ("the customer"), never addressed to the customer.
+Use only the facts above. Never invent evidence, delivery records, cancellation proof or merchant responses.{_review_feedback_for(state, "specialist")}"""
     return llm().with_structured_output(Assessment, method="json_schema").invoke(prompt).model_dump()
 
 
+FRAUD_INSTRUCTIONS = """The customer says they did not make this payment. Decide whether a criminal used their card.
+Look for: a country different from the customer's home, a device they have not used, a failed 3-D Secure check,
+an unusual hour, and no history with the merchant. Each one makes true fraud more likely.
+
+How to choose:
+- file_chargeback: the warning signs point to someone else using the card. The customer gets their money back
+  and the bank claims it back from the merchant.
+- decline_claim: only if the evidence clearly shows the customer made the payment. Say so neutrally.
+- refund_customer: only if the bank itself made a mistake.
+Remember the customer is legally entitled to a prompt refund for an unauthorised payment, so if in doubt,
+favour the customer and flag the doubt for the human reviewer."""
+
+MERCHANT_INSTRUCTIONS = """The customer made this payment but has a problem with the shop: for example the item never arrived,
+the service was never provided, the item arrived damaged or not as described, they were charged after cancelling,
+charged twice, or charged the wrong amount.
+
+How to choose:
+- file_chargeback: the complaint describes a believable problem with the merchant and nothing in the data
+  contradicts it. This is the normal outcome for a genuine merchant dispute, even if the complaint is vague or
+  hedged (for example "I never got to use it" or "I thought I'd cancelled that").
+- decline_claim: only if the data actively contradicts the complaint. Missing proof is NOT a reason to decline:
+  the bank never has delivery, cancellation or usage records at this stage, and the chargeback process is how the
+  merchant gets to respond with its evidence.
+- refund_customer: only if the bank itself made a mistake.
+The customer's past disputes are background only. Earlier fraud claims, even lost ones, do not make a complaint
+about a merchant less believable: judge this complaint on its own facts.
+If the customer mentions more than one problem and the data rules one out (for example they think they were charged
+twice but there is only one payment), say so, and base the recommendation on the problem that remains.
+In the assessment, list what the customer should provide to support the claim (for example proof of cancellation,
+photos of the damage, or the booking confirmation)."""
+
+
+FRIENDLY_FRAUD_INSTRUCTIONS = """The customer says they did not make this payment, but triage found signs that the payment came from the
+customer's own account activity. Be fair and careful: this is often a family member or someone in the household
+using a saved card, or a purchase the customer has forgotten. It is rarely deliberate.
+
+Never say or imply the customer is lying. Describe the evidence neutrally (for example "the payment was made from
+a device the customer has used before"), and suggest the customer checks with people in their household and
+with the merchant.
+
+How to choose:
+- decline_claim: two or more signs show the payment came from the customer's own device, account or history.
+- file_chargeback: if signs point the other way (an unknown device, a failed 3-D Secure check, a different
+  country), say the case looks like true fraud after all.
+- refund_customer: only if the bank itself made a mistake."""
+
+
 def fraud_specialist(state: MyAgentState) -> dict:
-    # TODO: add fraud-specific checks (geo mismatch, unknown device, failed 3DS, odd hour)
-    return _specialist(state, "fraud investigator")
+    return _specialist(state, "fraud investigator", FRAUD_INSTRUCTIONS,
+                       "Warning signs of fraud", fraud_signals(state))
 
 
 def merchant_specialist(state: MyAgentState) -> dict:
-    # TODO: check cancellation dates, delivery windows, duplicate amounts
-    return _specialist(state, "merchant dispute specialist")
+    return _specialist(state, "merchant dispute specialist", MERCHANT_INSTRUCTIONS,
+                       "Checks on the payment", merchant_checks(state))
 
 
 def friendly_fraud_specialist(state: MyAgentState) -> dict:
-    # TODO: be careful and fair: friendly fraud is often a family member, not deliberate
-    return _specialist(state, "first-party (friendly) fraud analyst")
+    facts = [f"Points to the customer or household: {s}" for s in customer_made_it_signals(state)]
+    facts += [f"Points to someone else: {s}" for s in fraud_signals(state)]
+    return _specialist(state, "first-party (friendly) fraud analyst", FRIENDLY_FRAUD_INSTRUCTIONS,
+                       "Signals in both directions", facts)
 
 
 # ---------------------------------------------------------------- 5. evidence pack (owner: specialists)

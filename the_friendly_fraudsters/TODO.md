@@ -109,11 +109,11 @@ Branch: `data-evals`
 
 **Please push a branch soon, even unfinished, and pull `main` first.** Pradeep is also editing `utils/nodes.py`, so consider putting new prompts in `utils/specialists.py` to avoid merge conflicts.
 
-- [ ] **Merchant specialist:** only CMP-015 is still declined ("I thought I'd stopped that"). In a real chargeback the customer's credible account is enough to raise one; decline only when the evidence *contradicts* the customer
-- [ ] **Fraud specialist:** country vs home, unknown device, failed 3-D Secure, odd hour
-- [ ] **Friendly-fraud specialist:** fair and careful, never accusing
-- [ ] Use the vulnerability level: consider refunding while investigating if the customer can't afford the loss
-- [ ] Evidence pack sections: Summary, Reason code, Transaction details, Evidence, Customer history, **Vulnerability**, Recommendation
+- [x] **Merchant specialist:** only CMP-015 is still declined ("I thought I'd stopped that"). In a real chargeback the customer's credible account is enough to raise one; decline only when the evidence *contradicts* the customer
+- [x] **Fraud specialist:** country vs home, unknown device, failed 3-D Secure, odd hour
+- [x] **Friendly-fraud specialist:** fair and careful, never accusing
+- [x] Use the vulnerability level: consider refunding while investigating if the customer can't afford the loss
+- [x] Evidence pack sections: Summary, Reason code, Transaction details, Evidence, Customer history, **Vulnerability**, Recommendation
 - [x] Reviewer feedback reaches the specialists and the evidence pack (wired by Pradeep)
 - [ ] Test: `uv run python -m evals.run_evals`. Recommendation is now **22 / 23**; target 23 / 23
 - [ ] Merge by about 14:30
