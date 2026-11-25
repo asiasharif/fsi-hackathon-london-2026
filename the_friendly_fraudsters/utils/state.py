@@ -47,3 +47,6 @@ class MyAgentState(MyAgentInput):
     # set by human_approval
     decision: str
     reviewer_notes: str
+    # set by write_customer_letter (owner: customer communication)
+    customer_letter: str        # "Subject: ...\n\n<letter body>", ready to send
+    letter_quality: dict        # outcome, tone flags, attempts, "llm" or "template_fallback", any unresolved problems

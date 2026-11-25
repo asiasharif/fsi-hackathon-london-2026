@@ -4,6 +4,7 @@ from utils.nodes import (
     classify_dispute, draft_evidence_pack, finalise, fraud_specialist, friendly_fraud_specialist,
     human_approval, load_case, merchant_specialist, route_to_specialist, triage,
 )
+from utils.customer_letter import write_customer_letter
 from utils.state import MyAgentContext, MyAgentInput, MyAgentState
 
 
@@ -18,6 +19,7 @@ def build_agent(**kwargs):
     builder.add_node("friendly_fraud_specialist", friendly_fraud_specialist)
     builder.add_node("draft_evidence_pack", draft_evidence_pack)
     builder.add_node("human_approval", human_approval)
+    builder.add_node("write_customer_letter", write_customer_letter)
     builder.add_node("finalise", finalise)
 
     builder.add_edge(START, "load_case")
@@ -27,7 +29,8 @@ def build_agent(**kwargs):
     for specialist in ("fraud_specialist", "merchant_specialist", "friendly_fraud_specialist"):
         builder.add_edge(specialist, "draft_evidence_pack")
     builder.add_edge("draft_evidence_pack", "human_approval")
-    builder.add_edge("human_approval", "finalise")
+    builder.add_edge("human_approval", "write_customer_letter")
+    builder.add_edge("write_customer_letter", "finalise")
     builder.add_edge("finalise", END)
 
     return builder.compile(**kwargs)
