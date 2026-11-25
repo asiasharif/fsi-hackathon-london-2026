@@ -11,6 +11,8 @@ import re
 from datetime import date, datetime, timedelta
 from typing import Literal
 
+from langchain.agents import create_agent
+from langchain.agents.middleware import PIIMiddleware
 from langchain.chat_models import init_chat_model
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
@@ -130,6 +132,26 @@ class Classification(BaseModel):
     vulnerable_signals: list[str] = Field(description="Quotes suggesting the customer may be vulnerable (distress, financial hardship, illness). Empty if none.")
 
 
+# PII redaction (LangChain middleware). The model only needs the shape of the complaint to classify it, not the
+# customer's identity or card details. Applied to the classifier, the first step that sends free text to the model.
+UK_PHONE = r"(?:\+44\s?|\b0)7\d{3}\s?\d{3}\s?\d{3}\b"
+UK_SORT_CODE = r"\b\d{2}-\d{2}-\d{2}\b"
+
+
+def pii_middleware(customer_name: str | None = None) -> list[PIIMiddleware]:
+    middleware = [
+        PIIMiddleware("email", strategy="redact"),
+        PIIMiddleware("credit_card", strategy="mask"),
+        PIIMiddleware("uk_phone", detector=UK_PHONE, strategy="redact"),
+        PIIMiddleware("sort_code", detector=UK_SORT_CODE, strategy="redact"),
+    ]
+    names = [part for part in (customer_name or "").split() if len(part) > 2]
+    if names:
+        pattern = r"\b(?:" + "|".join(re.escape(n) for n in names) + r")\b"
+        middleware.append(PIIMiddleware("customer_name", detector=pattern, strategy="redact"))
+    return middleware
+
+
 def classify_dispute(state: MyAgentState) -> dict:
     prompt = f"""Classify this card dispute complaint with the reason code that fits the customer's main claim.
 
@@ -148,7 +170,11 @@ accept the charge is from a subscription they had and say they stopped it.
 
 Complaint: {state["complaint"]["text"]}
 Transaction: {state["transaction"]}{_review_feedback_for(state, "classify_dispute")}"""
-    result = llm().with_structured_output(Classification, method="json_schema").invoke(prompt)
+    # The classifier runs as a LangChain agent with PII-redaction middleware, so card numbers, emails, phone
+    # numbers, sort codes and the customer's name are removed before the text reaches the model.
+    classifier = create_agent(model=llm(), tools=[], response_format=Classification,
+                              middleware=pii_middleware(state.get("customer", {}).get("name")))
+    result = classifier.invoke({"messages": [{"role": "user", "content": prompt}]})["structured_response"]
     return result.model_dump()
 
 

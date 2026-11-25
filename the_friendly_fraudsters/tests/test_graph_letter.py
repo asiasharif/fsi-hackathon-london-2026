@@ -42,6 +42,9 @@ class FakeModel:
 def app(monkeypatch):
     monkeypatch.setattr(nodes, "llm", lambda: FakeModel())
     monkeypatch.setattr(cl, "init_chat_model", lambda _m: FakeModel())
+    # The classifier runs through create_agent (for the PII middleware); give it the same fake answer.
+    monkeypatch.setattr(nodes, "create_agent", lambda **kw: type("FakeAgent", (), {"invoke": lambda self, _i: {
+        "structured_response": FakeModel().with_structured_output(kw["response_format"]).invoke(None)}})())
     from agent import build_agent
     return build_agent(checkpointer=InMemorySaver(), store=InMemoryStore())
 

@@ -70,12 +70,13 @@ Icons: hand with heart (customer), person in a tie (colleague), bank building (c
 - **Working flow:** load case → **vulnerability check** (crisis → fast lane to a human) → classify reason code → triage rules → fraud / merchant / friendly-fraud **specialist** → evidence pack → **quality reviewer** (sends weak packs back to the step that caused the problem, max 2 retries) → **human approval** → **customer letter** → save to customer memory
 - **Controls / evals:**
   - Human-in-the-loop: every case pauses for a person (`interrupt()`); the AI never decides alone
+  - **PII-redaction middleware** (LangChain) on the classifier: names, card numbers, emails, UK phone numbers and sort codes are removed before the text reaches the model
   - The quality reviewer checks every evidence pack against the raw data (8 / 8 on planted mistakes)
   - Triage is plain Python rules, so routing is repeatable and auditable
   - LangSmith evals on 25 labelled cases, before and after every change
   - The crisis holding letter uses no AI at all; every decline mentions the Financial Ombudsman
 
-**Tools & libraries used:** LangGraph · LangSmith (tracing, datasets, experiments) · LLM Gateway · Pydantic. (Remove "Deep Agents" from the template line: we didn't use it.)
+**Tools & libraries used:** LangGraph · LangChain middleware (PII redaction) · LangSmith (tracing, datasets, experiments) · LLM Gateway · Pydantic. (Remove "Deep Agents" from the template line: we didn't use it.)
 
 **GitHub link:** https://github.com/asiasharif/fsi-hackathon-london-2026 (code in `the_friendly_fraudsters/`)
 
@@ -151,6 +152,7 @@ Before the demo: `cd the_friendly_fraudsters && uv run langgraph dev`. Start cas
 - **"Why not let the AI decide?"** A wrong decline harms customers and breaks Consumer Duty. The saving comes from faster investigation, not removing people.
 - **"How do you know it works?"** 25 labelled cases including deliberate traps, scored in LangSmith before and after every change, plus 8 planted-mistake packs for the reviewer.
 - **"Do scores vary?"** Earlier versions moved by ±1 between runs; the final version scored the same on two runs.
+- **"Did you use middleware / Deep Agents?"** Middleware, yes: PII redaction on the classifier, so customer names and card details never reach the model (proven by capturing the model's input). Deep Agents, not yet: we chose a LangGraph workflow because disputes need auditable, repeatable routing. Making each specialist a Deep Agent is our next step.
 - **"Is this real data?"** No, all synthetic, as the rules require.
 
 ## Sources
