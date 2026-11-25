@@ -131,7 +131,20 @@ class Classification(BaseModel):
 
 
 def classify_dispute(state: MyAgentState) -> dict:
-    prompt = f"""Classify this card dispute complaint.
+    prompt = f"""Classify this card dispute complaint with the reason code that fits the customer's main claim.
+
+Reason codes:
+- fraud_card_not_present: the customer says they did not make or authorise an online, phone or in-app payment.
+- fraud_card_present: the customer says they did not make an in-person payment (card lost, stolen or cloned).
+- goods_not_received: they paid, but the goods or service never arrived or never happened.
+- not_as_described: they received it, but it was faulty, damaged, fake or not what was advertised.
+- duplicate_charge: the same purchase was charged more than once.
+- cancelled_recurring: they agree they had the subscription, but were charged after cancelling or stopping it.
+- incorrect_amount: they made the purchase but were charged a different amount than agreed.
+
+Deciding rule: if the customer says they did not make the payment ("I didn't make it", "wasn't me", "not me"), it is
+a fraud code, even if they also mention a subscription they cancelled. cancelled_recurring is for customers who
+accept the charge is from a subscription they had and say they stopped it.
 
 Complaint: {state["complaint"]["text"]}
 Transaction: {state["transaction"]}{_review_feedback_for(state, "classify_dispute")}"""
@@ -158,6 +171,16 @@ def triage(state: MyAgentState) -> dict:
     lost_fraud_claims = [d for d in state["dispute_history"] if d["reason_code"] in FRAUD_CODES and d["outcome"] == "lost"]
     if lost_fraud_claims:
         reasons.append(f"{len(lost_fraud_claims)} earlier fraud claim(s) lost")
+
+    # Hard block: an unknown device or a failed 3-D Secure points to a third party, so other signals (earlier
+    # purchases, lost claims) can never make this friendly fraud.
+    blockers = []
+    if not tx.get("device_known"):
+        blockers.append("Made on a device the customer has not used before")
+    if not tx.get("3ds_passed"):
+        blockers.append("Failed 3-D Secure")
+    if blockers:
+        return {"route": "fraud", "route_reasons": blockers + [f"Friendly fraud ruled out despite: {r}" for r in reasons]}
 
     if len(reasons) >= 2:
         return {"route": "friendly_fraud", "route_reasons": reasons}
