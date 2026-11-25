@@ -18,7 +18,7 @@ from langsmith import Client, evaluate
 from utils import db
 from utils.nodes import classify_dispute, load_case, triage
 
-DATASET = "friendly-fraudsters-disputes-v1"
+DATASET = "friendly-fraudsters-disputes-v2"
 
 
 def ensure_dataset(client: Client):
