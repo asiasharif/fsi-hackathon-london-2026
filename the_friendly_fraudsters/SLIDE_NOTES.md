@@ -42,7 +42,26 @@ Roles as on the final deck.
 
 The customer never mentions self-harm. Our agent recognises crisis language and sends the case **straight to a human**, skipping the investigation.
 
-## Slide 5: How we built it
+## Slide 5: Our CCC approach
+
+**Customer, colleague, company: everyone wins**
+
+**Top box:** We judged every design choice by three groups: **the customer, the colleague and the company.** Customers get a fast, fair answer, colleagues get a case ready to decide, and NatWest cuts cost while meeting Consumer Duty.
+
+| Card | Line | Proof point |
+| --- | --- | --- |
+| **Customer** | Fast, fair answers; a person on every crisis | Crisis to a human in under 5 s |
+| **Colleague** | The agent investigates; the analyst decides | 22 / 23 packs ready first time |
+| **Company** | Lower cost, fewer wrong chargebacks | ≈ £2.4M a year + Consumer Duty |
+
+**What to say (about 30 s):**
+- **Customer:** half of UK adults show signs of vulnerability (FCA Financial Lives, 49%), so crisis cases go to a person in under 5 seconds (our CMP-011 run: 4.8 s), letters never accuse, and every decline names the Financial Ombudsman.
+- **Colleague:** the agent does the reading, classifying and write-up; the analyst gets a decision-ready evidence pack (22 of 23 pass our quality reviewer first time) and makes the call. The AI never decides alone.
+- **Company:** about £2.4M a year on card-not-present fraud disputes alone (slide 9), fewer wrong chargebacks from friendly fraud (48% of consumers have mistakenly disputed a real purchase, Mastercard), and an audit trail for Consumer Duty and the 8-week deadline.
+
+Icons: hand with heart (customer), person in a tie (colleague), bank building (company), in the deck's blue.
+
+## Slide 6: How we built it
 
 **Architecture, flow, and what's underneath**
 
@@ -60,7 +79,7 @@ The customer never mentions self-harm. Our agent recognises crisis language and 
 
 **GitHub link:** https://github.com/asiasharif/fsi-hackathon-london-2026 (code in `the_friendly_fraudsters/`)
 
-## Slide 6: How we built it, more detail (optional)
+## Slide 7: How we built it, more detail (optional)
 
 - **Left box:** screenshot of the LangSmith trace for CMP-003 (the sofa case), showing the quality reviewer **rejecting the first evidence pack and passing the rewrite**, then the pause for a human. Find it under Tracing Projects → `fsi-hackathon-Asia Sharif`.
 - **Right box, design choices:**
@@ -68,7 +87,7 @@ The customer never mentions self-harm. Our agent recognises crisis language and 
   - An unknown device or a failed 3-D Secure blocks the "friendly fraud" route, so real fraud victims are never wrongly declined
   - Friendly fraud is often a family member: letters never accuse
 
-## Slide 7: What we got
+## Slide 8: What we got
 
 **Outcome, evidence, and the value it creates**
 
@@ -91,7 +110,7 @@ Small note under the table: *25 hand-labelled synthetic cases, including traps: 
 
 **If asked "is 100% realistic?":** it's 25 synthetic cases we designed, including traps. It shows the agent handles every situation we tested, not that it's perfect in production, and every case still goes to a human.
 
-## Slide 8: Business value and what's next (optional)
+## Slide 9: Business value and what's next (optional)
 
 - **Business value:** about **£2.4M a year** saved on card-not-present fraud disputes alone: 3.2M UK cases in 2025 (UK Finance) × NatWest's 16.5% current-account share (NatWest Group) × about £7.70 per dispute (Mastercard, US benchmark) × 60% of handling effort removed (**our assumption**: a human still approves every case). Plus faster answers, consistent vulnerable-customer care and no missed 8-week deadlines. Merchant disputes and friendly fraud aren't counted, so the real figure is likely higher.
 - **Next step:**
@@ -101,7 +120,7 @@ Small note under the table: *25 hand-labelled synthetic cases, including traps: 
   - An LLM judge for letter tone, online evals and a human annotation queue in LangSmith
   - Tracking the FCA 8-week deadline on every open case
 
-## Slide 9: Questions?
+## Slide 10: Questions?
 
 **The Friendly Fraudsters · https://github.com/asiasharif/fsi-hackathon-london-2026**
 
@@ -122,7 +141,7 @@ Before the demo: `cd the_friendly_fraudsters && uv run langgraph dev`. Start cas
    - vulnerability check → **HIGH** → straight to a human (**fast lane**; the investigation is skipped, 2 seconds vs 35)
    - the **fast-lane screen**: a banner *"High-risk vulnerable customer. Contact them now; the investigation is on hold"*, the vulnerability reasons and the customer's words. Resume with `{"decision": "contacted", "notes": "Called the customer"}` (the choices here are `contacted` or `escalated`, not approve)
    - the holding letter, written **without AI**: a person will call within 24 hours, **Samaritans 116 123**, 999 if in danger
-3. **Close on slide 7** (the scores).
+3. **Close on slide 8** (the scores).
 
 **Backup:** if Studio is slow or fails, open `dispute_agent.ipynb` section 4 (full sofa run with outputs saved).
 
