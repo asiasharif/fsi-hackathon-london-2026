@@ -73,7 +73,11 @@ Telling these three apart is the core job of the agent.
 The agent works like an assembly line. Each step does one job and passes a growing "case file" to the next.
 
 ```
-load_case -> classify_dispute -> triage -+-> fraud_specialist ----------+
+load_case -> vulnerability_check -+-- HIGH risk (crisis, self-harm) --> FAST LANE: straight to a human now
+                                  |
+                                  +-- none / low / medium (flag carried through every step)
+                                  v
+             classify_dispute -> triage -+-> fraud_specialist ----------+
                                          +-> merchant_specialist -------+-> draft_evidence_pack <--+
                                          +-> friendly_fraud_specialist -+          |               | not good enough
                                                                                    v               | (max 2 retries)
@@ -83,20 +87,44 @@ load_case -> classify_dispute -> triage -+-> fraud_specialist ----------+
                                                          human_approval -> customer_letter -> finalise
 ```
 
-Steps marked **NEW** are the two extra agents.
+Steps marked **NEW** are additions to the starter code.
 
 1. **Load the case:** pull up the complaint, the customer, the payment, earlier purchases at that shop and the customer's past disputes.
-2. **Classify (AI):** read the complaint and pick a reason code, such as "fraud", "goods not received" or "cancelled subscription". Also flag whether the customer sounds vulnerable, for example stressed or in financial hardship.
-3. **Triage (plain rules, no AI):** choose which of the three kinds it is. A "not me" claim is treated as likely friendly fraud if at least two of these are true:
+2. **NEW: Vulnerability check (AI + rules):** right at the start, decide whether the customer may be vulnerable (see [Vulnerable customers](#vulnerable-customers) below). High risk goes straight to a human. Otherwise the flag travels with the case and changes how every later step treats the customer.
+3. **Classify (AI):** read the complaint and pick a reason code, such as "fraud", "goods not received" or "cancelled subscription".
+4. **Triage (plain rules, no AI):** choose which of the three kinds it is. A "not me" claim is treated as likely friendly fraud if at least two of these are true:
    - they have bought from this shop before
    - the payment came from their own device and passed the bank's security check (3-D Secure)
    - they have lost fraud claims before
-4. **Specialist (AI):** one of three expert agents (fraud, merchant or friendly fraud) reviews the evidence and recommends an action: file a chargeback, refund the customer, or decline the claim.
-5. **Evidence pack (AI):** writes the case up as a tidy report.
-6. **NEW: Quality review agent (AI):** a checker reads the evidence pack before any human sees it. Is every claim backed by real data? Did it make anything up? Does the recommendation match the evidence? Was a vulnerable customer handled carefully? If not, it sends the pack back with feedback to be rewritten, at most twice.
-7. **Human approval:** the agent pauses, and a member of staff approves the recommendation or overrides it. The AI never has the final say.
-8. **NEW: Customer communication agent (AI):** writes the letter to the customer explaining the outcome. Gentler and clearer for vulnerable customers, never accusing anyone in friendly-fraud cases, in line with the FCA's Consumer Duty.
-9. **Remember:** the outcome is saved to the customer's history, so their next dispute takes it into account.
+5. **Specialist (AI):** one of three expert agents (fraud, merchant or friendly fraud) reviews the evidence and recommends an action: file a chargeback, refund the customer, or decline the claim.
+6. **Evidence pack (AI):** writes the case up as a tidy report.
+7. **NEW: Quality review agent (AI):** a checker reads the evidence pack before any human sees it. Is every claim backed by real data? Did it make anything up? Does the recommendation match the evidence? Was a vulnerable customer handled carefully? If not, it sends the pack back with feedback to be rewritten, at most twice.
+8. **Human approval:** the agent pauses, and a member of staff approves the recommendation or overrides it. The AI never has the final say.
+9. **NEW: Customer communication agent (AI):** writes the letter to the customer explaining the outcome. Gentler and clearer for vulnerable customers, never accusing anyone in friendly-fraud cases, in line with the FCA's Consumer Duty.
+10. **Remember:** the outcome is saved to the customer's history, so their next dispute takes it into account.
+
+## Vulnerable customers
+
+Vulnerability changes **how** we handle a case, not **whether** the customer is right: the decision still rests on the evidence, but the customer gets more care, priority and a human. This follows the FCA's Consumer Duty and its guidance on vulnerable customers.
+
+**What the check looks at:** the complaint text ("I've just lost my job", "I'm really struggling"), the customer's profile (already marked vulnerable) and their history (many disputes or repeated contact in a short time).
+
+**What it returns:** vulnerable yes or no, the type (health, life event, low financial resilience, low capability), the level (none, low, medium or high) and the reasons.
+
+| Level | Example | What happens |
+| --- | --- | --- |
+| High | "I can't cope anymore", mentions of self-harm, severe distress | **Fast lane:** skip the investigation and go straight to a human, with a short summary |
+| Low or medium | Job loss, illness, money worries, confusion about the process | Normal investigation, but moved up the queue, **always** reviewed by a human, gentler letter with a support contact |
+| None | "This charge isn't mine" | Normal flow. Anger ("I'm furious!") alone is not vulnerability |
+
+**How later steps use the flag:**
+
+- **Specialist:** consider refunding while investigating if the customer can't afford the loss. Handle friendly-fraud cases with extra care.
+- **Evidence pack:** a "Vulnerability" section saying what was found and what was adjusted.
+- **Quality review:** checks the vulnerability was handled appropriately.
+- **Human approval:** always a human, with the vulnerability shown at the top.
+- **Customer letter:** simpler words, a support contact, no pressure, longer deadlines.
+- **Remember:** save the flag for next time. It is sensitive data, so store only what's needed.
 
 ## Example from a test run
 
@@ -147,7 +175,8 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Grow the sample complaints from 4 to 20–30 in `data/complaints.jsonl`, each with the right answer attached (expected reason code and expected specialist).
 - Cover all three kinds and every reason code, including some tricky or vague ones.
 - Add matching customers, payments and past disputes so each case makes sense. For example, a friendly-fraud case needs earlier purchases at the same shop.
-- Include a few vulnerable customers.
+- Include vulnerable customers, with labels for each complaint: vulnerable yes or no, type and level. Add tricky cases: subtle signals ("I've had a hard few months"), anger that isn't vulnerability ("I'm furious!") and at least one high-risk case that must go to the fast lane.
+- **NEW: score the vulnerability check.** It must catch every high-risk case (missing one is the worst mistake), and we track how many low/medium cases it spots and how many false alarms it raises.
 - Run `evals/run_evals.py` to get accuracy scores in LangSmith.
 - Find where the agent gets things wrong, help fix a prompt, and re-run to show the score going up. That before-and-after is a key demo moment.
 - **NEW: build the quality review agent.** Write its checklist (evidence backs every claim, nothing made up, recommendation matches evidence, vulnerable customers handled carefully). It returns pass or fail with feedback.
@@ -163,7 +192,9 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Tune the triage rules: which signals mean friendly fraud, and how many are needed.
 - **NEW: wire the review loop.** If `quality_review` fails the pack, send it back to `draft_evidence_pack` with the feedback, at most 2 times, then on to the human either way.
 - **NEW: add the `customer_letter` step** after human approval, and the new fields in `utils/state.py` (review result, feedback, retry count, letter).
+- **NEW: wire the vulnerability check** straight after `load_case`, with the high-risk fast lane to a human, and add its fields to `utils/state.py` (vulnerable, type, level, reasons).
 - Optional extras: send cases the agent isn't sure about straight to a human, or put vulnerable customers in a priority queue.
+- Move vulnerability detection out of `classify_dispute` (it currently returns `vulnerable_signals`) into the new step.
 - Merge everyone's work into one branch and keep it running end to end.
 
 **Files:** `agent.py`, `utils/state.py`, and `load_case`, `classify_dispute` and `triage` in `utils/nodes.py`
@@ -176,6 +207,7 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Give each specialist its own prompt, and possibly its own tools.
 - Make the evidence pack read like a real bank document, with clear sections and the evidence quoted.
 - **NEW:** when the quality reviewer sends the pack back, rewrite it using the reviewer's feedback.
+- **NEW:** use the vulnerability flag. Specialists consider refunding while investigating when the customer can't afford the loss, and the evidence pack gets a "Vulnerability" section.
 - Optional: make each specialist a mini agent that decides which data to look up, rather than receiving everything up front.
 
 **Files:** the three `*_specialist` functions and `draft_evidence_pack` in `utils/nodes.py`
@@ -185,11 +217,13 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Make the approval step clear for the reviewer: what the agent recommends, why, and whether the customer is vulnerable. The reviewer can approve or override.
 - Make memory visible. On a repeat dispute the agent should say something like "this customer has lost 2 earlier fraud claims".
 - Optional: move memory from the data file to LangGraph's built-in store, which shows up nicely in LangSmith.
+- **NEW: build the vulnerability check** (`vulnerability_check`): read the complaint, profile and history, and return vulnerable yes or no, type, level and reasons. High risk triggers the fast lane.
+- **NEW: show vulnerability at the top of the human approval screen**, and handle the fast-lane case there.
 - **NEW: build the customer communication agent.** After approval, write the letter to the customer: plain English, what happens next and when, gentler for vulnerable customers, never accusing anyone in friendly-fraud cases.
 - Write the 5-minute demo script and slides: the problem, how it works, the live demo, the eval scores and the impact.
 - Pick the 2–3 best example complaints for the live demo, and rehearse.
 
-**Files:** `human_approval`, `customer_letter` and `finalise` in `utils/nodes.py`, `tools/memory.py`, the slides
+**Files:** `vulnerability_check`, `human_approval`, `customer_letter` and `finalise` in `utils/nodes.py`, `tools/memory.py`, the slides
 
 ## Timeline
 
@@ -208,4 +242,5 @@ The goal is one complaint running all the way through by midday, then improve an
 - The specialists need the case-file fields from the graph person.
 - The quality reviewer (role 1) and the evidence pack writer (role 3) agree what "good enough" means, so the feedback is useful.
 - The graph person wires the review loop and the letter step once roles 1 and 4 have first versions.
+- The vulnerability check (role 4) needs its labels and tricky cases from the data person (role 1), and its fields wired in by the graph person (role 2).
 - The demo person needs everyone's work by mid-afternoon.
