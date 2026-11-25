@@ -45,7 +45,7 @@ git pull origin main                    # now and then, to pick up teammates' me
 
 ## Overview
 
-We are building an AI agent that handles card disputes for a bank. A customer says "I didn't make this payment", and the agent works out what kind of problem it is, checks the evidence, recommends what to do and writes the case up. A member of staff then approves the decision. A working starter is in this folder (`the_friendly_fraudsters/`), and the 4 of us each take one part and improve it during the day.
+We are building a team of AI agents that handles card disputes for a bank. A customer says "I didn't make this payment", and the agents work out what kind of problem it is, check the evidence, recommend what to do and write the case up. A quality reviewer checks the write-up, a member of staff approves the decision, and the customer gets a clear letter. A working starter is in this folder (`the_friendly_fraudsters/`), and the 4 of us each take one part and improve it during the day.
 
 ## The problem
 
@@ -74,9 +74,16 @@ The agent works like an assembly line. Each step does one job and passes a growi
 
 ```
 load_case -> classify_dispute -> triage -+-> fraud_specialist ----------+
-                                         +-> merchant_specialist -------+-> draft_evidence_pack -> human_approval -> finalise
-                                         +-> friendly_fraud_specialist -+
+                                         +-> merchant_specialist -------+-> draft_evidence_pack <--+
+                                         +-> friendly_fraud_specialist -+          |               | not good enough
+                                                                                   v               | (max 2 retries)
+                                                                            quality_review --------+
+                                                                                   | passed
+                                                                                   v
+                                                         human_approval -> customer_letter -> finalise
 ```
+
+Steps marked **NEW** are the two extra agents.
 
 1. **Load the case:** pull up the complaint, the customer, the payment, earlier purchases at that shop and the customer's past disputes.
 2. **Classify (AI):** read the complaint and pick a reason code, such as "fraud", "goods not received" or "cancelled subscription". Also flag whether the customer sounds vulnerable, for example stressed or in financial hardship.
@@ -86,8 +93,10 @@ load_case -> classify_dispute -> triage -+-> fraud_specialist ----------+
    - they have lost fraud claims before
 4. **Specialist (AI):** one of three expert agents (fraud, merchant or friendly fraud) reviews the evidence and recommends an action: file a chargeback, refund the customer, or decline the claim.
 5. **Evidence pack (AI):** writes the case up as a tidy report.
-6. **Human approval:** the agent pauses, and a member of staff approves the recommendation or overrides it. The AI never has the final say.
-7. **Remember:** the outcome is saved to the customer's history, so their next dispute takes it into account.
+6. **NEW: Quality review agent (AI):** a checker reads the evidence pack before any human sees it. Is every claim backed by real data? Did it make anything up? Does the recommendation match the evidence? Was a vulnerable customer handled carefully? If not, it sends the pack back with feedback to be rewritten, at most twice.
+7. **Human approval:** the agent pauses, and a member of staff approves the recommendation or overrides it. The AI never has the final say.
+8. **NEW: Customer communication agent (AI):** writes the letter to the customer explaining the outcome. Gentler and clearer for vulnerable customers, never accusing anyone in friendly-fraud cases, in line with the FCA's Consumer Duty.
+9. **Remember:** the outcome is saved to the customer's history, so their next dispute takes it into account.
 
 ## Example from a test run
 
@@ -104,9 +113,9 @@ Sample cases in `data/complaints.jsonl`: CMP-001 (true fraud), CMP-002 (cancelle
 ## Why judges should like it
 
 - **Real value:** every bank handles disputes. There is a clear user (the disputes team) and a measurable win (less handling time, fewer bad chargebacks).
-- **Technical depth:** a classifier, three specialist agents, memory of each customer and a human approval step. That covers everything the judges listed.
+- **Technical depth:** a classifier, three specialist agents, a quality reviewer that sends weak work back (agents checking each other), a customer letter writer, memory of each customer and a human approval step.
 - **Measurable:** the eval script checks how often the agent picks the right reason code and the right specialist. We can show the score before and after improving a prompt.
-- **Good live demo:** type "I didn't make this payment", show the steps in LangSmith Studio, show the evidence pack, then click approve.
+- **Good live demo:** type "I didn't make this payment", show the steps in LangSmith Studio, show the reviewer sending a weak pack back, click approve, then show the customer letter.
 
 ## What's in this folder
 
@@ -128,10 +137,10 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 
 | Role | In short | Delivers | Owner |
 | --- | --- | --- | --- |
-| 1. Data and evals | Create the fake world the agent works in, and measure how well it does | Dataset, baseline score, improved score |  |
-| 2. Graph and routing | Own the assembly line, so cases reach the right specialist | Working end-to-end run by midday |  |
-| 3. Specialists and evidence pack | Make the three expert agents smart and the report professional | Good recommendations and a polished evidence pack |  |
-| 4. Memory, approval and demo | The human side, the agent's memory, and the pitch | The demo and the slides |  |
+| 1. Data and evals + quality review agent | Create the fake world the agents work in, measure how well they do, and build the checker | Dataset, baseline and improved scores, the quality reviewer | Asia |
+| 2. Graph and routing | Own the assembly line, including the review loop and the letter step | Working end-to-end run by midday |  |
+| 3. Specialists and evidence pack | Make the three expert agents smart and the report professional | Good recommendations and a polished evidence pack that improves on feedback |  |
+| 4. Memory, approval, customer letter and demo | The human side, the agent's memory, the customer letter and the pitch | The customer letter agent, the demo and the slides |  |
 
 ### 1. Data and evals
 
@@ -141,8 +150,10 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Include a few vulnerable customers.
 - Run `evals/run_evals.py` to get accuracy scores in LangSmith.
 - Find where the agent gets things wrong, help fix a prompt, and re-run to show the score going up. That before-and-after is a key demo moment.
+- **NEW: build the quality review agent.** Write its checklist (evidence backs every claim, nothing made up, recommendation matches evidence, vulnerable customers handled carefully). It returns pass or fail with feedback.
+- **NEW: test the reviewer.** Plant a few deliberately bad evidence packs and score how many it catches.
 
-**Files:** `data/`, `evals/`
+**Files:** `data/`, `evals/`, and `quality_review` in `utils/nodes.py`
 
 ### 2. Graph and routing (the "glue" person)
 
@@ -150,6 +161,8 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Own `agent.py`, the order the steps run in.
 - Improve the classifier prompt in `classify_dispute` so it picks the right reason code more often, working with the data and evals person.
 - Tune the triage rules: which signals mean friendly fraud, and how many are needed.
+- **NEW: wire the review loop.** If `quality_review` fails the pack, send it back to `draft_evidence_pack` with the feedback, at most 2 times, then on to the human either way.
+- **NEW: add the `customer_letter` step** after human approval, and the new fields in `utils/state.py` (review result, feedback, retry count, letter).
 - Optional extras: send cases the agent isn't sure about straight to a human, or put vulnerable customers in a priority queue.
 - Merge everyone's work into one branch and keep it running end to end.
 
@@ -162,6 +175,7 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - **Friendly-fraud specialist:** be fair and careful. Often a family member made the purchase, so the customer isn't lying on purpose.
 - Give each specialist its own prompt, and possibly its own tools.
 - Make the evidence pack read like a real bank document, with clear sections and the evidence quoted.
+- **NEW:** when the quality reviewer sends the pack back, rewrite it using the reviewer's feedback.
 - Optional: make each specialist a mini agent that decides which data to look up, rather than receiving everything up front.
 
 **Files:** the three `*_specialist` functions and `draft_evidence_pack` in `utils/nodes.py`
@@ -171,10 +185,11 @@ Each person can work in parallel once we have agreed the case-file fields (`util
 - Make the approval step clear for the reviewer: what the agent recommends, why, and whether the customer is vulnerable. The reviewer can approve or override.
 - Make memory visible. On a repeat dispute the agent should say something like "this customer has lost 2 earlier fraud claims".
 - Optional: move memory from the data file to LangGraph's built-in store, which shows up nicely in LangSmith.
+- **NEW: build the customer communication agent.** After approval, write the letter to the customer: plain English, what happens next and when, gentler for vulnerable customers, never accusing anyone in friendly-fraud cases.
 - Write the 5-minute demo script and slides: the problem, how it works, the live demo, the eval scores and the impact.
 - Pick the 2–3 best example complaints for the live demo, and rehearse.
 
-**Files:** `human_approval` and `finalise` in `utils/nodes.py`, `tools/memory.py`, the slides
+**Files:** `human_approval`, `customer_letter` and `finalise` in `utils/nodes.py`, `tools/memory.py`, the slides
 
 ## Timeline
 
@@ -183,7 +198,7 @@ The goal is one complaint running all the way through by midday, then improve an
 | When | Everyone |
 | --- | --- |
 | First hour | Agree the case-file fields and data format together |
-| Midday | One complaint runs end to end, even if the agents are basic |
+| Midday | One complaint runs end to end, even if the agents are basic. The reviewer and letter can be simple stubs at first |
 | Afternoon | Each person improves their part. Run the evals, fix one thing and show the score improve |
 | Last hour | Stop adding features, rehearse the demo, push the code |
 
@@ -191,4 +206,6 @@ The goal is one complaint running all the way through by midday, then improve an
 
 - The data person feeds the evals, and works with the graph person on the classifier.
 - The specialists need the case-file fields from the graph person.
+- The quality reviewer (role 1) and the evidence pack writer (role 3) agree what "good enough" means, so the feedback is useful.
+- The graph person wires the review loop and the letter step once roles 1 and 4 have first versions.
 - The demo person needs everyone's work by mid-afternoon.
